@@ -1,0 +1,829 @@
+package dsa1.xczxx.wfs.ws.mservice.report;
+
+
+import com.alibaba.dubbo.common.utils.CollectionUtils;
+import com.alibaba.dubbo.common.utils.StringUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import kd.bos.dataentity.OperateOption;
+import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.entity.operate.result.OperationResult;
+import kd.bos.logging.Log;
+import kd.bos.logging.LogFactory;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
+
+public class FinancialDataSaver {
+    private final static Log log = LogFactory.getLog(FinancialDataSaver.class);
+
+
+    // 定义文本到字段名的映射关系
+    private static final Map<String, String[]> CPL01_MAP = new HashMap<>();
+    private static final Map<String, String[]> BS01_MAP = new HashMap<>();
+
+    private static final Map<String, String[]> CF01_MAP = new HashMap<>();
+
+
+    private static final Map<String, String[]> CQZ01_MAP = new HashMap<>();
+
+
+    private static final Log LOG = LogFactory.getLog(FinancialDataSaver.class);
+
+    // 字段常量
+    private static final String FIELD_ID = "id";
+    private static final String FIELD_DURING = "dsa1_during";
+    private static final String FIELD_YEARS = "dsa1_years";
+    private static final String FIELD_MONTHS = "dsa1_months";
+    private static final String FIELD_COMPANY_NAME = "dsa1_companyname";
+    private static final String FIELD_ORGS = "dsa1_orgs";
+    private static final String FIELD_ORGS_NUMBER = "dsa1_orgnumber";
+    private static final String FIELD_CURRENCY = "dsa1_currency";
+    private static final String FIELD_SCENE = "dsa1_scene";
+    private static final String FIELD_MODEL_NUM = "dsa1_modelNum";
+    private static final String FIELD_REPORT_NUMBER = "dsa1_reportnumber";
+    private static final String FIELD_CREATE_TIME = "dsa1_createtime";
+    private static final String FIELD_MODIFY_TIME = "dsa1_modifytime";
+    private static final Map<String, String> TABLE_NAME_MAP = new HashMap<>();
+    private static final Map<String, Map<String, String[]>> REPORT_TYPE_FIELD_MAPS = new HashMap<>();
+
+    // 文本到字段名的映射关系
+    static {
+        //报表映射
+        TABLE_NAME_MAP.put("CPL01", "dsa1_mergereport");      // 利润表
+        TABLE_NAME_MAP.put("CF01", "dsa1_mergereport_xjllb");     // 现金流量表
+        TABLE_NAME_MAP.put("BS01", "dsa1_mergereport_zcfzb");     // 资产负债表
+        TABLE_NAME_MAP.put("CQZ01", "dsa1_mergereport_gzwkb");     // 国资委快报
+
+        // 初始化所有80个文本对应的字段映射
+        // 格式：{文本关键字, [本期金额字段, 本年累计字段, 上年同期字段]}
+        CPL01_MAP.put("R2006", new String[]{"dsa1_r2006_bqs", "dsa1_r2006_bnlj", "dsa1_r2006_sntq"});
+        CPL01_MAP.put("R2007", new String[]{"dsa1_r2007_bqs", "dsa1_r2007_bnlj", "dsa1_r2007_sntq"});
+        CPL01_MAP.put("R2009", new String[]{"dsa1_r2009_bqs", "dsa1_r2009_bnlj", "dsa1_r2009_sntq"});
+        CPL01_MAP.put("R2010", new String[]{"dsa1_r2010_bqs", "dsa1_r2010_bnlj", "dsa1_r2010_sntq"});
+        CPL01_MAP.put("R2011", new String[]{"dsa1_r2011_bqs", "dsa1_r2011_bnlj", "dsa1_r2011_sntq"});
+        CPL01_MAP.put("R2005", new String[]{"dsa1_r2005_bqs", "dsa1_r2005_bnlj", "dsa1_r2005_sntq"});
+        CPL01_MAP.put("R2004", new String[]{"dsa1_r2004_bqs", "dsa1_r2004_bnlj", "dsa1_r2004_sntq"});
+        CPL01_MAP.put("R2003", new String[]{"dsa1_r2003_bqs", "dsa1_r2003_bnlj", "dsa1_r2003_sntq"});
+        CPL01_MAP.put("R2002", new String[]{"dsa1_r2002_bqs", "dsa1_r2002_bnlj", "dsa1_r2002_sntq"});
+        CPL01_MAP.put("R2020", new String[]{"dsa1_r2020_bqs", "dsa1_r2020_bnlj", "dsa1_r2020_sntq"});
+        CPL01_MAP.put("R2016", new String[]{"dsa1_r2016_bqs", "dsa1_r2002_bnlj", "dsa1_r2002_sntq"});
+        CPL01_MAP.put("R2017", new String[]{"dsa1_r2017_bqs", "dsa1_r2017_bnlj", "dsa1_r2017_sntq"});
+        CPL01_MAP.put("R2018", new String[]{"dsa1_r2018_bqs", "dsa1_r2018_bnlj", "dsa1_r2018_sntq"});
+        CPL01_MAP.put("R2019", new String[]{"dsa1_r2019_bqs", "dsa1_r2019_bnlj", "dsa1_r2019_sntq"});
+        CPL01_MAP.put("R2065", new String[]{"dsa1_r2065_bqs", "dsa1_r2065_bnlj", "dsa1_r2065_sntq"});
+        CPL01_MAP.put("R2012", new String[]{"dsa1_r2012_bqs", "dsa1_r2012_bnlj", "dsa1_r2012_sntq"});
+        CPL01_MAP.put("R2013", new String[]{"dsa1_r2013_bqs", "dsa1_r2013_bnlj", "dsa1_r2013_sntq"});
+        CPL01_MAP.put("R2014", new String[]{"dsa1_r2014_bqs", "dsa1_r2014_bnlj", "dsa1_r2014_sntq"});
+        CPL01_MAP.put("R2015", new String[]{"dsa1_r2015_bqs", "dsa1_r2015_bnlj", "dsa1_r2015_sntq"});
+        CPL01_MAP.put("R2059", new String[]{"dsa1_r2059_bqs", "dsa1_r2059_bnlj", "dsa1_r2059_sntq"});
+        CPL01_MAP.put("R2060", new String[]{"dsa1_r2060_bqs", "dsa1_r2060_bnlj", "dsa1_r2060_sntq"});
+        CPL01_MAP.put("R2061", new String[]{"dsa1_r2061_bqs", "dsa1_r2061_bnlj", "dsa1_r2061_sntq"});
+        CPL01_MAP.put("R2062", new String[]{"dsa1_r2062_bqs", "dsa1_r2062_bnlj", "dsa1_r2062_sntq"});
+        CPL01_MAP.put("R2063", new String[]{"dsa1_r2063_bqs", "dsa1_r2063_bnlj", "dsa1_r2063_sntq"});
+        CPL01_MAP.put("R2064", new String[]{"dsa1_r2064_bqs", "dsa1_r2064_bnlj", "dsa1_r2064_sntq"});
+        CPL01_MAP.put("R2035", new String[]{"dsa1_r2035_bqs", "dsa1_r2035_bnlj", "dsa1_r2035_sntq"});
+        CPL01_MAP.put("R2040", new String[]{"dsa1_r2040_bqs", "dsa1_r2040_bnlj", "dsa1_r2040_sntq"});
+        CPL01_MAP.put("R2008", new String[]{"dsa1_r2008_bqs", "dsa1_r2008_bnlj", "dsa1_r2008_sntq"});
+        CPL01_MAP.put("R2054", new String[]{"dsa1_r2054_bqs", "dsa1_r2054_bnlj", "dsa1_r2054_sntq"});
+        CPL01_MAP.put("R2055", new String[]{"dsa1_r2055_bqs", "dsa1_r2055_bnlj", "dsa1_r2055_sntq"});
+        CPL01_MAP.put("R2056", new String[]{"dsa1_r2056_bqs", "dsa1_r2056_bnlj", "dsa1_r2056_sntq"});
+        CPL01_MAP.put("R2057", new String[]{"dsa1_r2057_bqs", "dsa1_r2057_bnlj", "dsa1_r2057_sntq"});
+        CPL01_MAP.put("R2058", new String[]{"dsa1_r2058_bqs", "dsa1_r2058_bnlj", "dsa1_r2058_sntq"});
+        CPL01_MAP.put("R2067", new String[]{"dsa1_r2067_bqs", "dsa1_r2067_bnlj", "dsa1_r2067_sntq"});
+        CPL01_MAP.put("R2070", new String[]{"dsa1_r2070_bqs", "dsa1_r2070_bnlj", "dsa1_r2070_sntq"});
+
+        REPORT_TYPE_FIELD_MAPS.put("CPL01", CPL01_MAP);
+
+
+        BS01_MAP.put("R1038", new String[]{"dsa1_r1038_qm","dsa1_r1038_nc"});
+        BS01_MAP.put("R1003", new String[]{"dsa1_r1003_qm","dsa1_r1003_nc"});
+        BS01_MAP.put("R1005", new String[]{"dsa1_r1005_qm","dsa1_r1005_nc"});
+        BS01_MAP.put("R1019", new String[]{"dsa1_r1019_qm","dsa1_r1019_nc"});
+        BS01_MAP.put("R1006", new String[]{"dsa1_r1006_qm","dsa1_r1006_nc"});
+        BS01_MAP.put("R1008", new String[]{"dsa1_r1008_qm","dsa1_r1008_nc"});
+        BS01_MAP.put("R1009", new String[]{"dsa1_r1009_qm","dsa1_r1009_nc"});
+        BS01_MAP.put("R1010", new String[]{"dsa1_r1010_qm","dsa1_r1010_nc"});
+        BS01_MAP.put("R1011", new String[]{"dsa1_r1011_qm","dsa1_r1011_nc"});
+        BS01_MAP.put("R1012", new String[]{"dsa1_r1012_qm","dsa1_r1012_nc"});
+        BS01_MAP.put("R1013", new String[]{"dsa1_r1013_qm","dsa1_r1013_nc"});
+        BS01_MAP.put("R1014", new String[]{"dsa1_r1014_qm","dsa1_r1014_nc"});
+        BS01_MAP.put("R1015", new String[]{"dsa1_r1015_qm","dsa1_r1015_nc"});
+        BS01_MAP.put("R1016", new String[]{"dsa1_r1016_qm","dsa1_r1016_nc"});
+        BS01_MAP.put("R1017", new String[]{"dsa1_r1017_qm","dsa1_r1017_nc"});
+        BS01_MAP.put("R1076", new String[]{"dsa1_r1076_qm","dsa1_r1076_nc"});
+        BS01_MAP.put("R1077", new String[]{"dsa1_r1077_qm","dsa1_r1077_nc"});
+        BS01_MAP.put("R1078", new String[]{"dsa1_r1078_qm","dsa1_r1078_nc"});
+        BS01_MAP.put("R1082", new String[]{"dsa1_r1082_qm","dsa1_r1082_nc"});
+        BS01_MAP.put("R1084", new String[]{"dsa1_r1084_qm","dsa1_r1084_nc"});
+        BS01_MAP.put("R1085", new String[]{"dsa1_r1085_qm","dsa1_r1085_nc"});
+        BS01_MAP.put("R1086", new String[]{"dsa1_r1086_qm","dsa1_r1086_nc"});
+        BS01_MAP.put("R1020", new String[]{"dsa1_r1020_qm","dsa1_r1020_nc"});
+        BS01_MAP.put("R1021", new String[]{"dsa1_r1021_qm","dsa1_r1021_nc"});
+        BS01_MAP.put("R1022", new String[]{"dsa1_r1022_qm","dsa1_r1022_nc"});
+        BS01_MAP.put("R1023", new String[]{"dsa1_r1023_qm","dsa1_r1023_nc"});
+        BS01_MAP.put("R1024", new String[]{"dsa1_r1024_qm","dsa1_r1024_nc"});
+        BS01_MAP.put("R1025", new String[]{"dsa1_r1025_qm","dsa1_r1025_nc"});
+        BS01_MAP.put("R1026", new String[]{"dsa1_r1026_qm","dsa1_r1026_nc"});
+        BS01_MAP.put("R1027", new String[]{"dsa1_r1027_qm","dsa1_r1027_nc"});
+        BS01_MAP.put("R1028", new String[]{"dsa1_r1028_qm","dsa1_r1028_nc"});
+        BS01_MAP.put("R1029", new String[]{"dsa1_r1029_qm","dsa1_r1029_nc"});
+        BS01_MAP.put("R1030", new String[]{"dsa1_r1030_qm","dsa1_r1030_nc"});
+        BS01_MAP.put("R1031", new String[]{"dsa1_r1031_qm","dsa1_r1031_nc"});
+        BS01_MAP.put("R1032", new String[]{"dsa1_r1032_qm","dsa1_r1032_nc"});
+        BS01_MAP.put("R1033", new String[]{"dsa1_r1033_qm","dsa1_r1033_nc"});
+        BS01_MAP.put("R1034", new String[]{"dsa1_r1034_qm","dsa1_r1034_nc"});
+        BS01_MAP.put("R1035", new String[]{"dsa1_r1035_qm","dsa1_r1035_nc"});
+        BS01_MAP.put("R1036", new String[]{"dsa1_r1036_qm","dsa1_r1036_nc"});
+        BS01_MAP.put("R1092", new String[]{"dsa1_r1092_qm","dsa1_r1092_nc"});
+        BS01_MAP.put("R1093", new String[]{"dsa1_r1093_qm","dsa1_r1093_nc"});
+        BS01_MAP.put("R1094", new String[]{"dsa1_r1094_qm","dsa1_r1094_nc"});
+        BS01_MAP.put("R1095", new String[]{"dsa1_r1095_qm","dsa1_r1095_nc"});
+        BS01_MAP.put("R1096", new String[]{"dsa1_r1096_qm","dsa1_r1096_nc"});
+        BS01_MAP.put("R1097", new String[]{"dsa1_r1020_qm","dsa1_r1097_nc"});
+        BS01_MAP.put("R1098", new String[]{"dsa1_r1098_qm","dsa1_r1098_nc"});
+        BS01_MAP.put("R1099", new String[]{"dsa1_r1099_qm","dsa1_r1099_nc"});
+        BS01_MAP.put("R1040", new String[]{"dsa1_r1040_qm","dsa1_r1040_nc"});
+        BS01_MAP.put("R1042", new String[]{"dsa1_r1042_qm","dsa1_r1042_nc"});
+        BS01_MAP.put("R1057", new String[]{"dsa1_r1057_qm","dsa1_r1057_nc"});
+        BS01_MAP.put("R1067", new String[]{"dsa1_r1067_qm","dsa1_r1067_nc"});
+        BS01_MAP.put("R1043", new String[]{"dsa1_r1043_qm","dsa1_r1043_nc"});
+        BS01_MAP.put("R1045", new String[]{"dsa1_r1045_qm","dsa1_r1045_nc"});
+        BS01_MAP.put("R1046", new String[]{"dsa1_r1046_qm","dsa1_r1046_nc"});
+        BS01_MAP.put("R1047", new String[]{"dsa1_r1047_qm","dsa1_r1047_nc"});
+        BS01_MAP.put("R1048", new String[]{"dsa1_r1048_qm","dsa1_r1048_nc"});
+        BS01_MAP.put("R1049", new String[]{"dsa1_r1049_qm","dsa1_r1049_nc"});
+        BS01_MAP.put("R1050", new String[]{"dsa1_r1050_qm","dsa1_r1050_nc"});
+        BS01_MAP.put("R1051", new String[]{"dsa1_r1051_qm","dsa1_r1051_nc"});
+        BS01_MAP.put("R1052", new String[]{"dsa1_r1052_qm","dsa1_r1052_nc"});
+        BS01_MAP.put("R1053", new String[]{"dsa1_r1053_qm","dsa1_r1053_nc"});
+        BS01_MAP.put("R1054", new String[]{"dsa1_r1054_qm","dsa1_r1054_nc"});
+        BS01_MAP.put("R1055", new String[]{"dsa1_r1055_qm","dsa1_r1055_nc"});
+        BS01_MAP.put("R1103", new String[]{"dsa1_r1103_qm","dsa1_r1103_nc"});
+        BS01_MAP.put("R1104", new String[]{"dsa1_r1104_qm","dsa1_r1104_nc"});
+        BS01_MAP.put("R1105", new String[]{"dsa1_r1105_qm","dsa1_r1105_nc"});
+        BS01_MAP.put("R1111", new String[]{"dsa1_r1111_qm","dsa1_r1111_nc"});
+        BS01_MAP.put("R1114", new String[]{"dsa1_r1114_qm","dsa1_r1114_nc"});
+        BS01_MAP.put("R1115", new String[]{"dsa1_r1115_qm","dsa1_r1115_nc"});
+        BS01_MAP.put("R1116", new String[]{"dsa1_r1116_qm","dsa1_r1116_nc"});
+        BS01_MAP.put("R1058", new String[]{"dsa1_r1058_qm","dsa1_r1058_nc"});
+        BS01_MAP.put("R1059", new String[]{"dsa1_r1059_qm","dsa1_r1059_nc"});
+        BS01_MAP.put("R1060", new String[]{"dsa1_r1060_qm","dsa1_r1060_nc"});
+        BS01_MAP.put("R1061", new String[]{"dsa1_r1061_qm","dsa1_r1061_nc"});
+        BS01_MAP.put("R1062", new String[]{"dsa1_r1062_qm","dsa1_r1062_nc"});
+        BS01_MAP.put("R1063", new String[]{"dsa1_r1063_qm","dsa1_r1063_nc"});
+        BS01_MAP.put("R1064", new String[]{"dsa1_r1064_qm","dsa1_r1064_nc"});
+        BS01_MAP.put("R1065", new String[]{"dsa1_r1065_qm","dsa1_r1065_nc"});
+        BS01_MAP.put("R1120", new String[]{"dsa1_r1120_qm","dsa1_r1120_nc"});
+        BS01_MAP.put("R1121", new String[]{"dsa1_r1121_qm","dsa1_r1121_nc"});
+        BS01_MAP.put("R1122", new String[]{"dsa1_r1122_qm","dsa1_r1122_nc"});
+        BS01_MAP.put("R1123", new String[]{"dsa1_r1123_qm","dsa1_r1123_nc"});
+        BS01_MAP.put("R1124", new String[]{"dsa1_r1124_qm","dsa1_r1124_nc"});
+        BS01_MAP.put("R1069", new String[]{"dsa1_r1069_qm","dsa1_r1069_nc"});
+        BS01_MAP.put("R1070", new String[]{"dsa1_r1070_qm","dsa1_r1070_nc"});
+        BS01_MAP.put("R1071", new String[]{"dsa1_r1071_qm","dsa1_r1071_nc"});
+        BS01_MAP.put("R1072", new String[]{"dsa1_r1072_qm","dsa1_r1072_nc"});
+        BS01_MAP.put("R1073", new String[]{"dsa1_r1073_qm","dsa1_r1073_nc"});
+        BS01_MAP.put("R1074", new String[]{"dsa1_r1074_qm","dsa1_r1074_nc"});
+        BS01_MAP.put("R1075", new String[]{"dsa1_r1075_qm","dsa1_r1075_nc"});
+        BS01_MAP.put("R1125", new String[]{"dsa1_r1125_qm","dsa1_r1125_nc"});
+        BS01_MAP.put("R1126", new String[]{"dsa1_r1126_qm","dsa1_r1126_nc"});
+        BS01_MAP.put("R1127", new String[]{"dsa1_r1127_qm","dsa1_r1127_nc"});
+        BS01_MAP.put("R1128", new String[]{"dsa1_r1128_qm","dsa1_r1128_nc"});
+        BS01_MAP.put("R1129", new String[]{"dsa1_r1129_qm","dsa1_r1129_nc"});
+        BS01_MAP.put("R1130", new String[]{"dsa1_r1130_qm","dsa1_r1130_nc"});
+        BS01_MAP.put("R1131", new String[]{"dsa1_r1131_qm","dsa1_r1131_nc"});
+        BS01_MAP.put("R1132", new String[]{"dsa1_r1132_qm","dsa1_r1132_nc"});
+        BS01_MAP.put("R1133", new String[]{"dsa1_r1133_qm","dsa1_r1133_nc"});
+        BS01_MAP.put("R1134", new String[]{"dsa1_r1134_qm","dsa1_r1134_nc"});
+        BS01_MAP.put("R1135", new String[]{"dsa1_r1135_qm","dsa1_r1135_nc"});
+        BS01_MAP.put("R1136", new String[]{"dsa1_r1136_qm","dsa1_r1136_nc"});
+        BS01_MAP.put("R1137", new String[]{"dsa1_r1137_qm","dsa1_r1137_nc"});
+        BS01_MAP.put("R1138", new String[]{"dsa1_r1138_qm","dsa1_r1138_nc"});
+        BS01_MAP.put("R1139", new String[]{"dsa1_r1139_qm","dsa1_r1139_nc"});
+        BS01_MAP.put("R1140", new String[]{"dsa1_r1140_qm","dsa1_r1140_nc"});
+        BS01_MAP.put("R1141", new String[]{"dsa1_r1141_qm","dsa1_r1141_nc"});
+        BS01_MAP.put("R1142", new String[]{"dsa1_r1142_qm","dsa1_r1142_nc"});
+        BS01_MAP.put("R1143", new String[]{"dsa1_r1143_qm","dsa1_r1143_nc"});
+        BS01_MAP.put("R1144", new String[]{"dsa1_r1144_qm","dsa1_r1144_nc"});
+
+        REPORT_TYPE_FIELD_MAPS.put("BS01", BS01_MAP);
+
+        CF01_MAP.put("R3003", new String[]{"dsa1_r3003_bq","dsa1_r3003_bnlj","dsa1_r3003_sntq"});
+        CF01_MAP.put("R3040", new String[]{"dsa1_r3040_bq","dsa1_r3040_bnlj","dsa1_r3040_sntq"});
+        CF01_MAP.put("R3041", new String[]{"dsa1_r3041_bq","dsa1_r3041_bnlj","dsa1_r3041_sntq"});
+        CF01_MAP.put("R3005", new String[]{"dsa1_r3005_bq","dsa1_r3005_bnlj","dsa1_r3005_sntq"});
+        CF01_MAP.put("R3006", new String[]{"dsa1_r3006_bq","dsa1_r3006_bnlj","dsa1_r3006_sntq"});
+        CF01_MAP.put("R3007", new String[]{"dsa1_r3007_bq","dsa1_r3007_bnlj","dsa1_r3007_sntq"});
+        CF01_MAP.put("R3008", new String[]{"dsa1_r3008_bq","dsa1_r3008_bnlj","dsa1_r3008_sntq"});
+        CF01_MAP.put("R3009", new String[]{"dsa1_r3009_bq","dsa1_r3009_bnlj","dsa1_r3009_sntq"});
+        CF01_MAP.put("R3010", new String[]{"dsa1_r3010_bq","dsa1_r3010_bnlj","dsa1_r3010_sntq"});
+        CF01_MAP.put("R3011", new String[]{"dsa1_r3011_bq","dsa1_r3011_bnlj","dsa1_r3011_sntq"});
+        CF01_MAP.put("R3012", new String[]{"dsa1_r3012_bq","dsa1_r3012_bnlj","dsa1_r3012_sntq"});
+        CF01_MAP.put("R3013", new String[]{"dsa1_r3013_bq","dsa1_r3013_bnlj","dsa1_r3013_sntq"});
+        CF01_MAP.put("R3014", new String[]{"dsa1_r3014_bq","dsa1_r3014_bnlj","dsa1_r3014_sntq"});
+        CF01_MAP.put("R3016", new String[]{"dsa1_r3016_bq","dsa1_r3016_bnlj","dsa1_r3016_sntq"});
+        CF01_MAP.put("R3017", new String[]{"dsa1_r3017_bq","dsa1_r3017_bnlj","dsa1_r3017_sntq"});
+        CF01_MAP.put("R3018", new String[]{"dsa1_r3018_bq","dsa1_r3018_bnlj","dsa1_r3018_sntq"});
+        CF01_MAP.put("R3019", new String[]{"dsa1_r3019_bq","dsa1_r3019_bnlj","dsa1_r3019_sntq"});
+        CF01_MAP.put("R3020", new String[]{"dsa1_r3020_bq","dsa1_r3020_bnlj","dsa1_r3020_sntq"});
+        CF01_MAP.put("R3021", new String[]{"dsa1_r3021_bq","dsa1_r3021_bnlj","dsa1_r3021_sntq"});
+        CF01_MAP.put("R3022", new String[]{"dsa1_r3022_bq","dsa1_r3022_bnlj","dsa1_r3022_sntq"});
+        CF01_MAP.put("R3023", new String[]{"dsa1_r3023_bq","dsa1_r3023_bnlj","dsa1_r3023_sntq"});
+        CF01_MAP.put("R3024", new String[]{"dsa1_r3024_bq","dsa1_r3024_bnlj","dsa1_r3024_sntq"});
+        CF01_MAP.put("R3025", new String[]{"dsa1_r3025_bq","dsa1_r3025_bnlj","dsa1_r3025_sntq"});
+        CF01_MAP.put("R3026", new String[]{"dsa1_r3026_bq","dsa1_r3026_bnlj","dsa1_r3026_sntq"});
+        CF01_MAP.put("R3027", new String[]{"dsa1_r3027_bq","dsa1_r3027_bnlj","dsa1_r3027_sntq"});
+        CF01_MAP.put("R3029", new String[]{"dsa1_r3029_bq","dsa1_r3029_bnlj","dsa1_r3029_sntq"});
+        CF01_MAP.put("R3030", new String[]{"dsa1_r3030_bq","dsa1_r3030_bnlj","dsa1_r3030_sntq"});
+        CF01_MAP.put("R3031", new String[]{"dsa1_r3031_bq","dsa1_r3031_bnlj","dsa1_r3031_sntq"});
+        CF01_MAP.put("R3032", new String[]{"dsa1_r3032_bq","dsa1_r3032_bnlj","dsa1_r3032_sntq"});
+        CF01_MAP.put("R3033", new String[]{"dsa1_r3033_bq","dsa1_r3033_bnlj","dsa1_r3033_sntq"});
+        CF01_MAP.put("R3034", new String[]{"dsa1_r3034_bq","dsa1_r3034_bnlj","dsa1_r3034_sntq"});
+        CF01_MAP.put("R3035", new String[]{"dsa1_r3035_bq","dsa1_r3035_bnlj","dsa1_r3035_sntq"});
+        CF01_MAP.put("R3036", new String[]{"dsa1_r3036_bq","dsa1_r3036_bnlj","dsa1_r3036_sntq"});
+        CF01_MAP.put("R3037", new String[]{"dsa1_r3037_bq","dsa1_r3037_bnlj","dsa1_r3037_sntq"});
+        CF01_MAP.put("R3038", new String[]{"dsa1_r3038_bq","dsa1_r3038_bnlj","dsa1_r3038_sntq"});
+        CF01_MAP.put("R3039", new String[]{"dsa1_r3039_bq","dsa1_r3039_bnlj","dsa1_r3039_sntq"});
+
+        REPORT_TYPE_FIELD_MAPS.put("CF01", CF01_MAP);
+
+        CQZ01_MAP.put("QZ002", new String[]{"dsa1_qz002_qm","dsa1_qz002_bnlj","dsa1_qz002_sntq"});
+        CQZ01_MAP.put("QZ003", new String[]{"dsa1_qz003_qm","dsa1_qz003_bnlj","dsa1_qz003_sntq"});
+        CQZ01_MAP.put("QZ004", new String[]{"dsa1_qz004_qm","dsa1_qz004_bnlj","dsa1_qz004_sntq"});
+        CQZ01_MAP.put("QZ005", new String[]{"dsa1_qz005_qm","dsa1_qz005_bnlj","dsa1_qz005_sntq"});
+        CQZ01_MAP.put("QZ006", new String[]{"dsa1_qz006_qm","dsa1_qz006_bnlj","dsa1_qz006_sntq"});
+        CQZ01_MAP.put("QZ007", new String[]{"dsa1_qz007_qm","dsa1_qz007_bnlj","dsa1_qz007_sntq"});
+        CQZ01_MAP.put("QZ008", new String[]{"dsa1_qz008_qm","dsa1_qz008_bnlj","dsa1_qz008_sntq"});
+        CQZ01_MAP.put("QZ009", new String[]{"dsa1_qz009_qm","dsa1_qz009_bnlj","dsa1_qz009_sntq"});
+        CQZ01_MAP.put("QZ010", new String[]{"dsa1_qz010_qm","dsa1_qz010_bnlj","dsa1_qz010_sntq"});
+        CQZ01_MAP.put("QZ011", new String[]{"dsa1_qz011_qm","dsa1_qz011_bnlj","dsa1_qz011_sntq"});
+        CQZ01_MAP.put("QZ012", new String[]{"dsa1_qz012_qm","dsa1_qz012_bnlj","dsa1_qz012_sntq"});
+        CQZ01_MAP.put("QZ058", new String[]{"dsa1_qz058_qm","dsa1_qz058_bnlj","dsa1_qz058_sntq"});
+        CQZ01_MAP.put("QZ013", new String[]{"dsa1_qz013_qm","dsa1_qz013_bnlj","dsa1_qz013_sntq"});
+        CQZ01_MAP.put("QZ014", new String[]{"dsa1_qz014_qm","dsa1_qz014_bnlj","dsa1_qz014_sntq"});
+        CQZ01_MAP.put("QZ015", new String[]{"dsa1_qz015_qm","dsa1_qz015_bnlj","dsa1_qz015_sntq"});
+        CQZ01_MAP.put("QZ016", new String[]{"dsa1_qz016_qm","dsa1_qz016_bnlj","dsa1_qz016_sntq"});
+        CQZ01_MAP.put("QZ017", new String[]{"dsa1_qz017_qm","dsa1_qz017_bnlj","dsa1_qz017_sntq"});
+        CQZ01_MAP.put("QZ018", new String[]{"dsa1_qz018_qm","dsa1_qz018_bnlj","dsa1_qz018_sntq"});
+        CQZ01_MAP.put("QZ019", new String[]{"dsa1_qz019_qm","dsa1_qz019_bnlj","dsa1_qz019_sntq"});
+        CQZ01_MAP.put("QZ020", new String[]{"dsa1_qz020_qm","dsa1_qz020_bnlj","dsa1_qz020_sntq"});
+        CQZ01_MAP.put("QZ021", new String[]{"dsa1_qz021_qm","dsa1_qz021_bnlj","dsa1_qz021_sntq"});
+        CQZ01_MAP.put("QZ022", new String[]{"dsa1_qz022_qm","dsa1_qz022_bnlj","dsa1_qz022_sntq"});
+        CQZ01_MAP.put("QZ023", new String[]{"dsa1_qz023_qm","dsa1_qz023_bnlj","dsa1_qz023_sntq"});
+        CQZ01_MAP.put("QZ024", new String[]{"dsa1_qz024_qm","dsa1_qz024_bnlj","dsa1_qz024_sntq"});
+        CQZ01_MAP.put("QZ025", new String[]{"dsa1_qz025_qm","dsa1_qz025_bnlj","dsa1_qz025_sntq"});
+        CQZ01_MAP.put("QZ026", new String[]{"dsa1_qz026_qm","dsa1_qz026_bnlj","dsa1_qz026_sntq"});
+        CQZ01_MAP.put("QZ027", new String[]{"dsa1_qz027_qm","dsa1_qz027_bnlj","dsa1_qz027_sntq"});
+        CQZ01_MAP.put("QZ028", new String[]{"dsa1_qz028_qm","dsa1_qz028_bnlj","dsa1_qz028_sntq"});
+        CQZ01_MAP.put("QZ029", new String[]{"dsa1_qz029_qm","dsa1_qz029_bnlj","dsa1_qz029_sntq"});
+        CQZ01_MAP.put("QZ030", new String[]{"dsa1_qz030_qm","dsa1_qz030_bnlj","dsa1_qz030_sntq"});
+        CQZ01_MAP.put("QZ031", new String[]{"dsa1_qz031_qm","dsa1_qz031_bnlj","dsa1_qz031_sntq"});
+        CQZ01_MAP.put("QZ032", new String[]{"dsa1_qz032_qm","dsa1_qz032_bnlj","dsa1_qz032_sntq"});
+        CQZ01_MAP.put("QZ033", new String[]{"dsa1_qz033_qm","dsa1_qz033_bnlj","dsa1_qz033_sntq"});
+        CQZ01_MAP.put("QZ034", new String[]{"dsa1_qz034_qm","dsa1_qz034_bnlj","dsa1_qz034_sntq"});
+        CQZ01_MAP.put("QZ035", new String[]{"dsa1_qz035_qm","dsa1_qz035_bnlj","dsa1_qz035_sntq"});
+        CQZ01_MAP.put("QZ036", new String[]{"dsa1_qz036_qm","dsa1_qz036_bnlj","dsa1_qz036_sntq"});
+        CQZ01_MAP.put("QZ037", new String[]{"dsa1_qz037_qm","dsa1_qz037_bnlj","dsa1_qz037_sntq"});
+        CQZ01_MAP.put("QZ038", new String[]{"dsa1_qz038_qm","dsa1_qz038_bnlj","dsa1_qz038_sntq"});
+        CQZ01_MAP.put("QZ039", new String[]{"dsa1_qz039_qm","dsa1_qz039_bnlj","dsa1_qz039_sntq"});
+        CQZ01_MAP.put("QZ040", new String[]{"dsa1_qz040_qm","dsa1_qz040_bnlj","dsa1_qz040_sntq"});
+        CQZ01_MAP.put("QZ041", new String[]{"dsa1_qz041_qm","dsa1_qz041_bnlj","dsa1_qz041_sntq"});
+        CQZ01_MAP.put("QZ042", new String[]{"dsa1_qz042_qm","dsa1_qz042_bnlj","dsa1_qz042_sntq"});
+        CQZ01_MAP.put("QZ043", new String[]{"dsa1_qz043_qm","dsa1_qz043_bnlj","dsa1_qz043_sntq"});
+        CQZ01_MAP.put("QZ044", new String[]{"dsa1_qz044_qm","dsa1_qz044_bnlj","dsa1_qz044_sntq"});
+        CQZ01_MAP.put("QZ045", new String[]{"dsa1_qz045_qm","dsa1_qz045_bnlj","dsa1_qz045_sntq"});
+        CQZ01_MAP.put("QZ046", new String[]{"dsa1_qz046_qm","dsa1_qz046_bnlj","dsa1_qz046_sntq"});
+        CQZ01_MAP.put("QZ047", new String[]{"dsa1_qz047_qm","dsa1_qz047_bnlj","dsa1_qz047_sntq"});
+        CQZ01_MAP.put("QZ048", new String[]{"dsa1_qz048_qm","dsa1_qz048_bnlj","dsa1_qz048_sntq"});
+        CQZ01_MAP.put("QZ049", new String[]{"dsa1_qz049_qm","dsa1_qz049_bnlj","dsa1_qz049_sntq"});
+        CQZ01_MAP.put("QZ050", new String[]{"dsa1_qz050_qm","dsa1_qz050_bnlj","dsa1_qz050_sntq"});
+        CQZ01_MAP.put("QZ051", new String[]{"dsa1_qz051_qm","dsa1_qz051_bnlj","dsa1_qz051_sntq"});
+        CQZ01_MAP.put("QZ052", new String[]{"dsa1_qz052_qm","dsa1_qz052_bnlj","dsa1_qz052_sntq"});
+        CQZ01_MAP.put("QZ053", new String[]{"dsa1_qz053_qm","dsa1_qz053_bnlj","dsa1_qz053_sntq"});
+        CQZ01_MAP.put("QZ054", new String[]{"dsa1_qz054_qm","dsa1_qz054_bnlj","dsa1_qz054_sntq"});
+        CQZ01_MAP.put("QZ055", new String[]{"dsa1_qz055_qm","dsa1_qz055_bnlj","dsa1_qz055_sntq"});
+        CQZ01_MAP.put("QZ056", new String[]{"dsa1_qz056_qm","dsa1_qz056_bnlj","dsa1_qz056_sntq"});
+        CQZ01_MAP.put("QZ057", new String[]{"dsa1_qz057_qm","dsa1_qz057_bnlj","dsa1_qz057_sntq"});
+        CQZ01_MAP.put("QZ059", new String[]{"dsa1_qz059_qm","dsa1_qz059_bnlj","dsa1_qz059_sntq"});
+        CQZ01_MAP.put("QZ060", new String[]{"dsa1_qz060_qm","dsa1_qz060_bnlj","dsa1_qz060_sntq"});
+        CQZ01_MAP.put("QZ061", new String[]{"dsa1_qz061_qm","dsa1_qz061_bnlj","dsa1_qz061_sntq"});
+        CQZ01_MAP.put("QZ062", new String[]{"dsa1_qz062_qm","dsa1_qz062_bnlj","dsa1_qz062_sntq"});
+        CQZ01_MAP.put("QZ063", new String[]{"dsa1_qz063_qm","dsa1_qz063_bnlj","dsa1_qz063_sntq"});
+        CQZ01_MAP.put("QZ064", new String[]{"dsa1_qz064_qm","dsa1_qz064_bnlj","dsa1_qz064_sntq"});
+        CQZ01_MAP.put("QZ065", new String[]{"dsa1_qz065_qm","dsa1_qz065_bnlj","dsa1_qz065_sntq"});
+        CQZ01_MAP.put("QZ066", new String[]{"dsa1_qz066_qm","dsa1_qz066_bnlj","dsa1_qz066_sntq"});
+        CQZ01_MAP.put("QZ067", new String[]{"dsa1_qz067_qm","dsa1_qz067_bnlj","dsa1_qz067_sntq"});
+        CQZ01_MAP.put("QZ068", new String[]{"dsa1_qz068_qm","dsa1_qz068_bnlj","dsa1_qz068_sntq"});
+        CQZ01_MAP.put("QZ069", new String[]{"dsa1_qz069_qm","dsa1_qz069_bnlj","dsa1_qz069_sntq"});
+        CQZ01_MAP.put("QZ070", new String[]{"dsa1_qz070_qm","dsa1_qz070_bnlj","dsa1_qz070_sntq"});
+        CQZ01_MAP.put("QZ071", new String[]{"dsa1_qz071_qm","dsa1_qz071_bnlj","dsa1_qz071_sntq"});
+
+        REPORT_TYPE_FIELD_MAPS.put("CQZ01", CQZ01_MAP);
+
+
+
+
+
+
+
+
+
+
+
+
+        // 添加其他报表类型的映射
+
+
+    }
+
+    /**
+     * 主方法：保存财务数据
+     */
+    public static boolean saveFinancialData(String data,
+                                            Map<String, Object> params) {
+        try {
+            if (StringUtils.isBlank(data)) {
+                log.warn("保存财务数据失败：数据为空");
+                return false;
+            }
+
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                ApiResponse apiResponse = objectMapper.readValue(data, ApiResponse.class);
+                if (apiResponse.getData() == null || apiResponse.getData().isEmpty()) {
+                    log.warn("API返回数据为空");
+                    return false;
+                }
+                // 预加载所有需要的组织信息
+                Set<String> allEntities = extractAllEntities(apiResponse.getData());
+                Map<String, DynamicObject> entityMap = BudgetReportService.queryEntities(new ArrayList<>(allEntities));
+                int successCount = 0;
+                LocalDateTime now = LocalDateTime.now();
+                for (DataItem dataItem : apiResponse.getData()) {
+                    boolean success = processDataItem(dataItem, params, entityMap, now);
+                    if (success) {
+                        successCount++;
+                    }
+                }
+
+                log.info("财务数据保存完成，成功: {}/{}", successCount, apiResponse.getData().size());
+                return successCount > 0;
+
+            } catch (Exception e) {
+                log.error("保存财务数据失败: {}", e.getMessage(), e);
+                return false;
+            }
+
+
+        } catch (Exception e) {
+            System.err.println("保存财务数据失败: " + e.getMessage());
+            log.info("catch error ", e.getMessage());
+            return false;
+        }
+    }
+
+    private List<String> generatePeriods(String year) {
+        List<String> periods = new ArrayList<>();
+        int yearNum = Integer.parseInt(year);
+        String nextYear = String.valueOf(yearNum + 1);
+
+        // 添加年度期间
+        periods.add("FY" + year);
+        periods.add("FY" + nextYear);
+
+        // 添加下一年的月份期间
+        for (int month = 1; month <= 12; month++) {
+            periods.add(String.format("FY%s.M%02d", nextYear, month));
+        }
+
+        // 添加当前年的月份期间
+        for (int month = 1; month <= 12; month++) {
+            periods.add(String.format("FY%s.M%02d", year, month));
+        }
+
+        return periods;
+    }
+
+    /**
+     * 处理单个数据项
+     */
+    private static boolean processDataItem(DataItem dataItem, Map<String, Object> params,
+                                           Map<String, DynamicObject> entityMap, LocalDateTime now) {
+        try {
+            // 提取基础信息
+            String reportNumber = dataItem.getTempNum();
+            Map<String, String> pageDims = dataItem.getPageDims();
+
+            if (pageDims == null) {
+                log.warn("数据项缺少页面维度信息: {}", reportNumber);
+                return false;
+            }
+
+            String year = pageDims.get("Year");
+            String period = pageDims.get("Period");
+            String entity = pageDims.get("Entity");
+            String tempNum = dataItem.getTempNum();
+            String tableName = TABLE_NAME_MAP.get(tempNum);
+
+            if (Stream.of(year, period, entity).anyMatch(s -> s == null || s.trim().isEmpty())) {
+                LOG.warn("数据项缺少必要的维度信息: year={}, period={}, entity={}", year, period, entity);
+                return false;
+            }
+
+            // 获取对应报表类型的字段映射
+            Map<String, String[]> fieldMapping = REPORT_TYPE_FIELD_MAPS.get(tempNum); // 默认使用利润表映射
+
+            // 如果找不到映射，直接返回false，不执行该条数据
+            if (fieldMapping == null) {
+                log.warn("跳过报表类型 {} 的数据：未配置字段映射", tempNum);
+                return false;
+            }
+
+            // 提取数据
+            List<List<Object>> allData = DataExtractor.extractAllDatas(dataItem);
+            if (CollectionUtils.isEmpty(allData)) {
+                log.warn("数据项没有数据内容: {}", reportNumber);
+                return false;
+            }
+
+            // 创建并填充数据对象
+            DynamicObject financialData = createFinancialData(dataItem, params, year, period, entity, entityMap, tableName);
+
+
+            // 设置金额数据
+            setAmountData(financialData, allData, tableName, fieldMapping);
+
+            // 判断是新增还是更新
+            DynamicObject existingData = findExistingData(financialData, tableName);
+
+            // 保存数据
+            return saveOrUpdate(financialData, existingData, tableName);
+
+        } catch (Exception e) {
+            log.error("处理数据项失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+
+    private static DynamicObject findExistingData(DynamicObject financialData, String tableName) {
+        try {
+            List<QFilter> filters = Arrays.asList(
+                    new QFilter(FIELD_ORGS, QCP.equals, financialData.getLong(FIELD_ORGS)),
+                    new QFilter(FIELD_CURRENCY, QCP.equals, financialData.get(FIELD_CURRENCY)),
+                    new QFilter(FIELD_SCENE, QCP.equals, financialData.get(FIELD_SCENE)),
+                    new QFilter(FIELD_MODEL_NUM, QCP.equals, financialData.get(FIELD_MODEL_NUM)),
+                    new QFilter(FIELD_DURING, QCP.equals, financialData.get(FIELD_DURING)),
+                    new QFilter(FIELD_YEARS, QCP.equals, financialData.get(FIELD_YEARS)),
+                    new QFilter(FIELD_MONTHS, QCP.equals, financialData.get(FIELD_MONTHS))
+            );
+
+            return BusinessDataServiceHelper.loadSingle(tableName, FIELD_ID,
+                    filters.toArray(new QFilter[0]));
+
+        } catch (Exception e) {
+            LOG.debug("查找已存在数据失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private static DynamicObject getOrgMapping(String number) {
+        try {
+            DynamicObject orgMapping = BusinessDataServiceHelper.loadSingle("dsa1_reportorgmapping", "number,name", new QFilter[]{new QFilter("dsa1_hborgnumber", QCP.equals, number)});
+            return  orgMapping  ;
+        }catch (Exception e){
+            log.error("getOrgMapping: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * 保存或更新数据
+     */
+    private static boolean saveOrUpdate(DynamicObject financialData, DynamicObject existingData, String tableName
+    ) {
+        try {
+//            String nowStr = DATE_FORMATTER.format(now);
+            Date now = new Date();
+            if (existingData == null) {
+                // 新增
+                financialData.set(FIELD_CREATE_TIME, now);
+                financialData.set(FIELD_MODIFY_TIME, now);
+
+                OperationResult result = SaveServiceHelper.saveOperate(
+                        tableName,
+                        new DynamicObject[]{financialData},
+                        OperateOption.create()
+                );
+
+                boolean success = result != null && result.isSuccess();
+                if (success) {
+                    log.debug("新增数据成功");
+                }
+                return success;
+
+            } else {
+                // 更新
+                financialData.set(FIELD_ID, existingData.getLong(FIELD_ID));
+                financialData.set(FIELD_MODIFY_TIME, now);
+
+                SaveServiceHelper.update(new DynamicObject[]{financialData});
+                log.debug("更新数据成功");
+                return true;
+            }
+
+        } catch (Exception e) {
+            log.error("保存数据失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+
+    /**
+     * 创建财务数据对象
+     */
+    private static DynamicObject createFinancialData(DataItem dataItem, Map<String, Object> params,
+                                                     String year, String period, String entity,
+                                                     Map<String, DynamicObject> entityMap,
+                                                     String tableName) {
+
+        DynamicObject financialData = BusinessDataServiceHelper.newDynamicObject(tableName);
+
+        // 处理期间信息
+        String yearNum = year.substring(2); // 去掉"FY"前缀
+        String month = period.substring(3); // 去掉"M_"前缀
+        String during = yearNum + month;
+
+        financialData.set(FIELD_DURING, during);
+        financialData.set(FIELD_YEARS, yearNum);
+        financialData.set(FIELD_MONTHS, month);
+
+        // 查询组织信息
+        DynamicObject org = entityMap.get(entity);
+        if (org != null) {
+            DynamicObject  dynamicObject  =  getOrgMapping(org.getString("number"));
+            if (dynamicObject==null){
+                financialData.set(FIELD_COMPANY_NAME, org.getString("name"));
+                financialData.set(FIELD_ORGS, org.getLong("id"));
+                financialData.set(FIELD_ORGS_NUMBER, org.getString("number"));
+            }else{
+                financialData.set(FIELD_COMPANY_NAME,dynamicObject.getString("name") );
+                financialData.set(FIELD_ORGS, org.getLong("id"));
+                financialData.set(FIELD_ORGS_NUMBER, dynamicObject.getString("number"));
+
+            }
+
+        } else {
+            log.warn("未找到组织信息: {}", entity);
+        }
+
+        // 设置其他基本信息
+        financialData.set(FIELD_CURRENCY, params.get("currency"));
+        financialData.set(FIELD_SCENE, params.get("scene"));
+        financialData.set(FIELD_MODEL_NUM, params.get("modelNum"));
+        financialData.set(FIELD_REPORT_NUMBER, dataItem.getTempNum());
+
+        return financialData;
+    }
+
+    private static Set<String> extractAllEntities(List<DataItem> dataItems) {
+        Set<String> entities = new HashSet<>();
+        for (DataItem item : dataItems) {
+            Map<String, String> pageDims = item.getPageDims();
+            if (pageDims != null && pageDims.containsKey("Entity")) {
+                entities.add(pageDims.get("Entity"));
+            }
+        }
+        return entities;
+    }
+
+    public static DynamicObject judgeReportOperation(DynamicObject financialData) {
+        DynamicObject mergereport;
+        try {
+
+            QFilter[] filters = {
+                    new QFilter("dsa1_orgs", QCP.equals, financialData.getLong("dsa1_orgs")),
+                    new QFilter("dsa1_currency", QCP.equals, financialData.get("dsa1_currency")),
+                    new QFilter("dsa1_scene", QCP.equals, financialData.get("dsa1_scene")),
+                    new QFilter("dsa1_modelNum", QCP.equals, financialData.get("dsa1_modelNum")),
+                    new QFilter("dsa1_during", QCP.equals, financialData.get("dsa1_during")),
+                    new QFilter("dsa1_years", QCP.equals, financialData.get("dsa1_years")),
+                    new QFilter("dsa1_months", QCP.equals, financialData.get("dsa1_months")),
+            };
+
+            mergereport = BusinessDataServiceHelper.loadSingle("dsa1_mergereport", "id",
+                    filters);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return null;
+        }
+
+
+        return mergereport;
+    }
+
+    /**
+     * 设置金额数据 - 支持动态字段映射和灵活的数据格式
+     */
+    private static void setAmountData(DynamicObject financialData,
+                                      List<List<Object>> allData,
+                                      String tempNum,
+                                      Map<String, String[]> fieldMapping) {
+        if (CollectionUtils.isEmpty(allData) || fieldMapping == null) {
+            return;
+        }
+
+        AtomicInteger unmatchedCount = new AtomicInteger(0);
+        AtomicInteger matchedCount = new AtomicInteger(0);
+
+        for (List<Object> row : allData) {
+            if (row == null || row.isEmpty()) {
+                continue;
+            }
+
+            // 1. 提取科目编码（只使用编码进行匹配）
+            String textWithCode = Objects.toString(row.get(0), "");
+            String code = extractCode(textWithCode);      // 提取前面的编码，如 "R1043"
+
+            if (StringUtils.isBlank(code)) {
+                LOG.debug("行数据没有有效的科目编码: {}", textWithCode);
+                continue;
+            }
+
+            // 2. 动态获取金额字段（根据报表类型决定有多少个金额字段）
+            List<BigDecimal> amountValues = extractAmountValues(row, tempNum);
+
+            if (amountValues.isEmpty()) {
+                LOG.debug("行数据没有金额值: 编码={}", code);
+                continue;
+            }
+
+            // 3. 使用编码进行匹配
+            boolean matched = setAmountByMapping(financialData, code, amountValues, fieldMapping);
+
+            if (matched) {
+                matchedCount.incrementAndGet();
+            } else {
+                unmatchedCount.incrementAndGet();
+                LOG.debug("未匹配的科目编码: {}, 报表类型={}", code, tempNum);
+            }
+        }
+
+        if (unmatchedCount.get() > 0) {
+            LOG.info("报表类型 {} 处理完成：匹配 {} 条，未匹配 {} 条",
+                    tempNum, matchedCount.get(), unmatchedCount.get());
+        }
+    }
+
+    /**
+     * 提取科目编码（如 "R1043"）- 只提取编码部分
+     */
+    private static String extractCode(String textWithCode) {
+        if (StringUtils.isBlank(textWithCode)) {
+            return "";
+        }
+
+        // 格式如 "R1043|短期借款" - 取"|"前面的部分
+        if (textWithCode.contains("|")) {
+            return textWithCode.split("\\|", 2)[0].trim();
+        }
+
+        // 如果没有分隔符，尝试提取开头的字母+数字组合
+        String trimmed = textWithCode.trim();
+        int index = 0;
+        while (index < trimmed.length()) {
+            char c = trimmed.charAt(index);
+            if (!Character.isLetterOrDigit(c)) {
+                break;
+            }
+            index++;
+        }
+
+        if (index > 0) {
+            String possibleCode = trimmed.substring(0, index);
+            // 检查是否包含至少一个字母和一个数字
+            if (possibleCode.matches(".*[A-Za-z].*") && possibleCode.matches(".*[0-9].*")) {
+                return possibleCode;
+            }
+        }
+
+        return "";
+    }
+
+    /**
+     * 根据映射设置金额数据 - 使用编码匹配
+     */
+    private static boolean setAmountByMapping(DynamicObject financialData,
+                                              String code,
+                                              List<BigDecimal> amountValues,
+                                              Map<String, String[]> mappingMap) {
+        if (mappingMap == null || amountValues.isEmpty() || StringUtils.isBlank(code)) {
+            return false;
+        }
+
+        // 直接使用编码进行精确匹配
+        String[] fieldNames = mappingMap.get(code);
+
+        if (fieldNames != null) {
+            // 根据实际金额数量设置字段
+            for (int i = 0; i < Math.min(fieldNames.length, amountValues.size()); i++) {
+                if (fieldNames[i] != null && amountValues.get(i) != null) {
+                    financialData.set(fieldNames[i], amountValues.get(i));
+                }
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 动态提取金额值 - 根据报表类型决定取哪些列
+     */
+    private static List<BigDecimal> extractAmountValues(List<Object> row, String tempNum) {
+        List<BigDecimal> amounts = new ArrayList<>();
+
+        if (row.size() < 2) {
+            return amounts;
+        }
+
+        // 根据报表类型决定从第几列开始取，取多少列
+        int startCol = 1; // 默认从第2列开始（索引1）
+        int colCount = getAmountColumnCount(tempNum);
+
+        for (int i = startCol; i < startCol + colCount && i < row.size(); i++) {
+            BigDecimal amount = parseBigDecimal(row.get(i));
+            // 如果金额为null，也添加null占位，保持列数一致
+            amounts.add(amount);
+        }
+
+        return amounts;
+    }
+
+    /**
+     * 获取报表类型的金额列数
+     */
+    private static int getAmountColumnCount(String tempNum) {
+        switch (tempNum) {
+            case "CPL01": // 利润表 - 3个金额（本期、本年累计、上年同期）
+                return 3;
+            case "BS01":  // 资产负债表 - 2个金额（期末余额、年初余额）
+            case "CQY01": // 资产负债表 - 2个金额
+                return 2;
+            case "CF01":  // 现金流量表 - 可能是2或3个金额
+                return 3;
+            default:
+                return 3; // 默认3个金额
+        }
+    }
+
+
+
+
+
+    /**
+     * 解析BigDecimal
+     */
+    private static BigDecimal parseBigDecimal(Object value) {
+        if (value == null || "null".equals(value.toString())) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value.toString());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 生成ID
+     */
+    private static String generateId(String reportPeriod, String entityCode) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+        return "FIN_" + entityCode + "_" + reportPeriod + "_" + sdf.format(new Date());
+    }
+
+    /**
+     * 处理保存结果
+     */
+    private static boolean handleSaveResult(OperationResult saveResult, String reportPeriod, String entityCode) {
+        if (saveResult.isSuccess()) {
+            System.out.println("保存报表数据成功: " + reportPeriod + ", " + entityCode);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
+}
