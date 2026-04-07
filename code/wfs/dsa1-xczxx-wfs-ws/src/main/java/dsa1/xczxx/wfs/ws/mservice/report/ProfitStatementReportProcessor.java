@@ -2,7 +2,6 @@ package dsa1.xczxx.wfs.ws.mservice.report;
 
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.operate.result.IOperateInfo;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.logging.Log;
@@ -10,16 +9,13 @@ import kd.bos.logging.LogFactory;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
-import java.util.*;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.*;
 
 public class ProfitStatementReportProcessor {
 
@@ -69,12 +65,26 @@ public class ProfitStatementReportProcessor {
         gzqy11AccountMap.put("GZQY11-YYLR", "dsa1_yylr_ys");
         gzqy11AccountMap.put("GZQY11-LRZE", "dsa1_lrze_ys");
         gzqy11AccountMap.put("GZQY11-JLR", "dsa1_jlr_ys");
-
+        gzqy11AccountMap.put("GZQY11-JLR.01", "dsa1_jlr01_ys");
+        gzqy11AccountMap.put("GZQY11-YYZCB.21", "dsa1_yyzcb21_ys");
+        gzqy11AccountMap.put("GZQY11-YYZCB.24", "dsa1_yyzcb24_ys");
+        gzqy11AccountMap.put("GZQY11-YYZSR.05", "dsa1_yyzsr05_ys");
         gzqy11AccountMap.put("YYWSR", "dsa1_yylr01_ys");
         gzqy11AccountMap.put("YYWZC", "dsa1_yylr02_ys");
         gzqy11AccountMap.put("SJYS14", "dsa1_lrze01_ys");
-
-
+        gzqy11AccountMap.put("GZQY11-YYZCB.01", "dsa1_yyzcb01_ys");
+        gzqy11AccountMap.put("GZQY11-YYZCB.12", "dsa1_yyzcb12_ys");
+        gzqy11AccountMap.put("GZQY11-YYZCB.17", "dsa1_yyzcb17_ys");
+        gzqy11AccountMap.put("GZQY11-YYZCB.18", "dsa1_yyzcb18_ys");
+        gzqy11AccountMap.put("GZQY11-YYZCB.16", "dsa1_yyzcb16_ys");
+        gzqy11AccountMap.put("GZQY11-YYZCB.20", "dsa1_yyzcb20_ys");
+        gzqy11AccountMap.put("GZQY11-YYZCB.19", "dsa1_yyzcb19_ys");
+        gzqy11AccountMap.put("GZQY11-YYZCB.14", "dsa1_yyzcb14_ys");
+        gzqy11AccountMap.put("GZQY11-YYZCB.22", "dsa1_yyzcb22_ys");
+        gzqy11AccountMap.put("GZQY11-MGSJLR", "dsa1_mgsjlr_ys");
+        gzqy11AccountMap.put("GZQY11-FDGJJ", "dsa1_fdgjj_ys");
+        gzqy11AccountMap.put("GZQY11-GJLR", "dsa1_gjlr_ys");
+        gzqy11AccountMap.put("GZQY11-YYZCB.15", "dsa1_yyzcb15_ys");
 
         REPORT_ACCOUNT_FIELD_MAP.put("GZQY11", gzqy11AccountMap);
 
@@ -158,11 +168,223 @@ public class ProfitStatementReportProcessor {
         // 根据实际需求添加更多科目映射
         REPORT_ACCOUNT_FIELD_MAP.put("GZQY13", gzqy13AccountMap);
 
+
+        Map<String, String> cwfyAccountMap = new HashMap<>();
+        cwfyAccountMap.put("CWFY01", "dsa1_cwfy01");
+        cwfyAccountMap.put("CWFY02", "dsa1_cwfy02");
+        cwfyAccountMap.put("CWFY02.01", "dsa1_cwfy0201");
+        cwfyAccountMap.put("CWFY02.02", "dsa1_cwfy0202");
+        cwfyAccountMap.put("CWFY03", "dsa1_cwfy03");
+        cwfyAccountMap.put("CWFY03.01", "dsa1_cwfy0301");
+        cwfyAccountMap.put("CWFY03.02", "dsa1_cwfy0302");
+        cwfyAccountMap.put("CWFY03.03", "dsa1_cwfy0303");
+        cwfyAccountMap.put("CWFY03.04", "dsa1_cwfy0304");
+        cwfyAccountMap.put("CWFY03.05", "dsa1_cwfy0305");
+        cwfyAccountMap.put("CWFY04", "dsa1_cwfy04");
+        cwfyAccountMap.put("CWFY04.01", "dsa1_cwfy0401");
+        cwfyAccountMap.put("CWFY04.02", "dsa1_cwfy0402");
+        cwfyAccountMap.put("CWFY04.03", "dsa1_cwfy0403");
+        cwfyAccountMap.put("CWFY04.04", "dsa1_cwfy0404");
+        cwfyAccountMap.put("CWFY05", "dsa1_cwfy05");
+        cwfyAccountMap.put("CWFY06", "dsa1_cwfy06");
+
+        REPORT_ACCOUNT_FIELD_MAP.put("CWFY", cwfyAccountMap);
+
+
+        Map<String, String> glfyAccountMap = new HashMap<>();
+        glfyAccountMap.put("GLFY01", "dsa1_glfy01");
+        glfyAccountMap.put("GLFY01.01", "dsa1_glfy0101");
+        glfyAccountMap.put("GLFY01.01.01", "dsa1_glfy010101");
+        glfyAccountMap.put("GLFY01.01.02", "dsa1_glfy010102");
+        glfyAccountMap.put("GLFY01.02", "dsa1_glfy0102");
+        glfyAccountMap.put("GLFY01.03", "dsa1_glfy0103");
+        glfyAccountMap.put("GLFY01.03.01", "dsa1_glfy010301");
+        glfyAccountMap.put("GLFY01.03.02", "dsa1_glfy010302");
+        glfyAccountMap.put("GLFY01.04", "dsa1_glfy0104");
+        glfyAccountMap.put("GLFY01.04.02", "dsa1_glfy010402");
+        glfyAccountMap.put("GLFY01.05", "dsa1_glfy0105");
+        glfyAccountMap.put("GLFY01.05.01", "dsa1_glfy010501");
+        glfyAccountMap.put("GLFY01.05.02", "dsa1_glfy010502");
+        glfyAccountMap.put("GLFY01.06", "dsa1_glfy0106");
+        glfyAccountMap.put("GLFY01.07", "dsa1_glfy0107");
+        glfyAccountMap.put("GLFY01.08", "dsa1_glfy0108");
+        glfyAccountMap.put("GLFY01.09", "dsa1_glfy0109");
+        glfyAccountMap.put("GLFY01.10", "dsa1_glfy0110");
+        glfyAccountMap.put("GLFY01.10.01", "dsa1_glfy011001");
+        glfyAccountMap.put("GLFY01.10.02", "dsa1_glfy011002");
+        glfyAccountMap.put("GLFY01.11.01", "dsa1_glfy011101");
+        glfyAccountMap.put("GLFY01.11.02", "dsa1_glfy011102");
+        glfyAccountMap.put("GLFY02", "dsa1_glfy02");
+        glfyAccountMap.put("GLFY03", "dsa1_glfy03");
+        glfyAccountMap.put("GLFY03.01", "dsa1_glfy0301");
+        glfyAccountMap.put("GLFY03.02", "dsa1_glfy0302");
+        glfyAccountMap.put("GLFY03.03", "dsa1_glfy0303");
+        glfyAccountMap.put("GLFY03.04", "dsa1_glfy0304");
+        glfyAccountMap.put("GLFY03.05", "dsa1_glfy0305");
+        glfyAccountMap.put("GLFY03.06", "dsa1_glfy0306");
+        glfyAccountMap.put("GLFY04", "dsa1_glfy04");
+        glfyAccountMap.put("GLFY04.01", "dsa1_glfy0401");
+        glfyAccountMap.put("GLFY04.02", "dsa1_glfy0402");
+        glfyAccountMap.put("GLFY05", "dsa1_glfy05");
+        glfyAccountMap.put("GLFY05.01", "dsa1_glfy0501");
+        glfyAccountMap.put("GLFY05.01.01", "dsa1_glfy050101");
+        glfyAccountMap.put("GLFY05.01.02", "dsa1_glfy050102");
+        glfyAccountMap.put("GLFY05.02", "dsa1_glfy0502");
+        glfyAccountMap.put("GLFY05.03", "dsa1_glfy0503");
+        glfyAccountMap.put("GLFY06", "dsa1_glfy06");
+        glfyAccountMap.put("GLFY06.01", "dsa1_glfy0601");
+        glfyAccountMap.put("GLFY06.02", "dsa1_glfy0602");
+        glfyAccountMap.put("GLFY06.03", "dsa1_glfy0603");
+        glfyAccountMap.put("GLFY06.04", "dsa1_glfy0604");
+        glfyAccountMap.put("GLFY06.05", "dsa1_glfy0605");
+        glfyAccountMap.put("GLFY06.06", "dsa1_glfy0606");
+        glfyAccountMap.put("GLFY07", "dsa1_glfy07");
+        glfyAccountMap.put("GLFY07.01", "dsa1_glfy0701");
+        glfyAccountMap.put("GLFY07.03", "dsa1_glfy0703");
+        glfyAccountMap.put("GLFY08", "dsa1_glfy08");
+        glfyAccountMap.put("GLFY08.01", "dsa1_glfy0801");
+        glfyAccountMap.put("GLFY08.02", "dsa1_glfy0802");
+        glfyAccountMap.put("GLFY08.03", "dsa1_glfy0803");
+        glfyAccountMap.put("GLFY09", "dsa1_glfy09");
+        glfyAccountMap.put("GLFY10", "dsa1_glfy10");
+        glfyAccountMap.put("GLFY11", "dsa1_glfy11");
+        glfyAccountMap.put("GLFY12", "dsa1_glfy12");
+        glfyAccountMap.put("GLFY13", "dsa1_glfy13");
+        glfyAccountMap.put("GLFY13.01", "dsa1_glfy1301");
+        glfyAccountMap.put("GLFY13.02", "dsa1_glfy1302");
+        glfyAccountMap.put("GLFY14", "dsa1_glfy14");
+        glfyAccountMap.put("GLFY15", "dsa1_glfy15");
+        glfyAccountMap.put("GLFY16", "dsa1_glfy16");
+        glfyAccountMap.put("GLFY17", "dsa1_glfy17");
+        glfyAccountMap.put("GLFY17.01", "dsa1_glfy1701");
+        glfyAccountMap.put("GLFY17.02", "dsa1_glfy1702");
+        glfyAccountMap.put("GLFY17.03", "dsa1_glfy1703");
+        glfyAccountMap.put("GLFY17.04", "dsa1_glfy1704");
+        glfyAccountMap.put("GLFY18", "dsa1_glfy18");
+        glfyAccountMap.put("GLFY18.01", "dsa1_glfy1801");
+        glfyAccountMap.put("GLFY18.02", "dsa1_glfy1802");
+        glfyAccountMap.put("GLFY18.03", "dsa1_glfy1803");
+        glfyAccountMap.put("GLFY18.04", "dsa1_glfy1804");
+        glfyAccountMap.put("GLFY18.05", "dsa1_glfy1805");
+        glfyAccountMap.put("GLFY18.06", "dsa1_glfy1806");
+        glfyAccountMap.put("GLFY18.07", "dsa1_glfy1807");
+        glfyAccountMap.put("GLFY18.08", "dsa1_glfy1808");
+        glfyAccountMap.put("GLFY19", "dsa1_glfy19");
+        glfyAccountMap.put("GLFY20", "dsa1_glfy20");
+        glfyAccountMap.put("GLFY21", "dsa1_glfy21");
+        glfyAccountMap.put("GLFY22", "dsa1_glfy22");
+        glfyAccountMap.put("GLFY23", "dsa1_glfy23");
+        glfyAccountMap.put("GLFY24", "dsa1_glfy24");
+        glfyAccountMap.put("GLFY25", "dsa1_glfy25");
+        glfyAccountMap.put("GLFY26", "dsa1_glfy26");
+        glfyAccountMap.put("GLFY27", "dsa1_glfy27");
+        glfyAccountMap.put("GLFY28", "dsa1_glfy28");
+        glfyAccountMap.put("GLFY29", "dsa1_glfy29");
+        glfyAccountMap.put("GLFY30", "dsa1_glfy30");
+        glfyAccountMap.put("GLFY31", "dsa1_glfy31");
+        glfyAccountMap.put("GLFY32", "dsa1_glfy32");
+        glfyAccountMap.put("GLFY33", "dsa1_glfy33");
+        glfyAccountMap.put("GLFY34", "dsa1_glfy34");
+        glfyAccountMap.put("GLFY34.01", "dsa1_glfy3401");
+        glfyAccountMap.put("GLFY34.02", "dsa1_glfy3402");
+        glfyAccountMap.put("GLFY34.03", "dsa1_glfy3403");
+        glfyAccountMap.put("GLFY34.04", "dsa1_glfy3404");
+
+        REPORT_ACCOUNT_FIELD_MAP.put("GLFY", glfyAccountMap);
+
+
+
+        Map<String, String> xsfyAccountMap = new HashMap<>();
+
+        xsfyAccountMap.put("XSFY01", "dsa1_xsfy01");
+        xsfyAccountMap.put("XSFY01.01", "dsa1_xsfy0101");
+        xsfyAccountMap.put("XSFY01.01.01", "dsa1_xsfy010101");
+        xsfyAccountMap.put("XSFY01.01.02", "dsa1_xsfy010102");
+        xsfyAccountMap.put("XSFY01.02", "dsa1_xsfy0102");
+        xsfyAccountMap.put("XSFY01.03", "dsa1_xsfy0103");
+        xsfyAccountMap.put("XSFY01.03.01", "dsa1_xsfy010301");
+        xsfyAccountMap.put("XSFY01.03.02", "dsa1_xsfy010302");
+        xsfyAccountMap.put("XSFY01.04", "dsa1_xsfy0104");
+        xsfyAccountMap.put("XSFY01.04.01", "dsa1_xsfy010401");
+        xsfyAccountMap.put("XSFY01.04.02", "dsa1_xsfy010402");
+        xsfyAccountMap.put("XSFY01.05", "dsa1_xsfy0105");
+        xsfyAccountMap.put("XSFY01.51", "dsa1_xsfy0151");
+        xsfyAccountMap.put("XSFY01.52", "dsa1_xsfy0152");
+        xsfyAccountMap.put("XSFY01.06", "dsa1_xsfy0106");
+        xsfyAccountMap.put("XSFY02", "dsa1_xsfy02");
+        xsfyAccountMap.put("XSFY01.07", "dsa1_xsfy0107");
+        xsfyAccountMap.put("XSFY01.08", "dsa1_xsfy0108");
+        xsfyAccountMap.put("XSFY01.09", "dsa1_xsfy0109");
+        xsfyAccountMap.put("XSFY01.09.01", "dsa1_xsfy010901");
+        xsfyAccountMap.put("XSFY01.09.02", "dsa1_xsfy010902");
+        xsfyAccountMap.put("XSFY01.10", "dsa1_xsfy0110");
+        xsfyAccountMap.put("XSFY01.10.01", "dsa1_xsfy011001");
+        xsfyAccountMap.put("XSFY01.10.02", "dsa1_xsfy011002");
+        xsfyAccountMap.put("XSFY03", "dsa1_xsfy03");
+        xsfyAccountMap.put("XSFY04-a", "dsa1_xsfy04a");
+        xsfyAccountMap.put("XSFY04.01", "dsa1_xsfy0401");
+        xsfyAccountMap.put("XSFY04.02", "dsa1_xsfy0402");
+        xsfyAccountMap.put("XSFY04.03", "dsa1_xsfy0403");
+        xsfyAccountMap.put("XSFY04.04", "dsa1_xsfy0404");
+        xsfyAccountMap.put("XSFY04.05", "dsa1_xsfy0405");
+        xsfyAccountMap.put("XSFY04.06", "dsa1_xsfy0406");
+        xsfyAccountMap.put("XSFY05", "dsa1_xsfy05");
+        xsfyAccountMap.put("XSFY05.01", "dsa1_xsfy0501");
+        xsfyAccountMap.put("XSFY05.02", "dsa1_xsfy0502");
+        xsfyAccountMap.put("XSFY06", "dsa1_xsfy06");
+        xsfyAccountMap.put("XSFY06.01", "dsa1_xsfy0601");
+        xsfyAccountMap.put("XSFY06.02", "dsa1_xsfy0602");
+        xsfyAccountMap.put("XSFY07", "dsa1_xsfy07");
+        xsfyAccountMap.put("XSFY08", "dsa1_xsfy08");
+        xsfyAccountMap.put("XSFY08.01", "dsa1_xsfy0801");
+        xsfyAccountMap.put("XSFY08.02", "dsa1_xsfy0802");
+        xsfyAccountMap.put("XSFY08.03", "dsa1_xsfy0803");
+        xsfyAccountMap.put("XSFY09", "dsa1_xsfy09");
+        xsfyAccountMap.put("XSFY10", "dsa1_xsfy10");
+        xsfyAccountMap.put("XSFY11", "dsa1_xsfy11");
+        xsfyAccountMap.put("XSFY12", "dsa1_xsfy12");
+        xsfyAccountMap.put("XSFY13", "dsa1_xsfy13");
+        xsfyAccountMap.put("XSFY14", "dsa1_xsfy14");
+        xsfyAccountMap.put("XSFY15", "dsa1_xsfy15");
+        xsfyAccountMap.put("XSFY16", "dsa1_xsfy16");
+        xsfyAccountMap.put("XSFY17", "dsa1_xsfy17");
+        xsfyAccountMap.put("XSFY17.01", "dsa1_xsfy1701");
+        xsfyAccountMap.put("XSFY17.02", "dsa1_xsfy1702");
+        xsfyAccountMap.put("XSFY18", "dsa1_xsfy18");
+        xsfyAccountMap.put("XSFY19", "dsa1_xsfy19");
+        xsfyAccountMap.put("XSFY20", "dsa1_xsfy20");
+        xsfyAccountMap.put("XSFY21", "dsa1_xsfy21");
+        xsfyAccountMap.put("XSFY22", "dsa1_xsfy22");
+        xsfyAccountMap.put("XSFY23", "dsa1_xsfy23");
+        xsfyAccountMap.put("XSFY24", "dsa1_xsfy24");
+        xsfyAccountMap.put("XSFY25", "dsa1_xsfy25");
+        xsfyAccountMap.put("XSFY26", "dsa1_xsfy26");
+        xsfyAccountMap.put("XSFY27", "dsa1_xsfy27");
+        xsfyAccountMap.put("XSFY28", "dsa1_xsfy28");
+        xsfyAccountMap.put("XSFY28.01", "dsa1_xsfy2801");
+        xsfyAccountMap.put("XSFY28.02", "dsa1_xsfy2802");
+        xsfyAccountMap.put("XSFY28.03", "dsa1_xsfy2803");
+        xsfyAccountMap.put("XSFY28.04", "dsa1_xsfy2804");
+        xsfyAccountMap.put("XSFY28.05", "dsa1_xsfy2805");
+        xsfyAccountMap.put("XSFY28.06", "dsa1_xsfy2806");
+        xsfyAccountMap.put("XSFY28.07", "dsa1_xsfy2807");
+        xsfyAccountMap.put("XSFY28.08", "dsa1_xsfy2808");
+        xsfyAccountMap.put("XSFY29", "dsa1_xsfy29");
+        xsfyAccountMap.put("XSFY30", "dsa1_xsfy30");
+        xsfyAccountMap.put("XSFY31", "dsa1_xsfy31");
+
+        REPORT_ACCOUNT_FIELD_MAP.put("XSFY", xsfyAccountMap);
+
+
         // 可以继续添加其他报表的科目映射
         // REPORT_ACCOUNT_FIELD_MAP.put("GZQY14", gzqy14AccountMap);
 
         REPORT_TABLE_MAP.put("GZQY11", "dsa1_budgetreport");  // GZQY11报表对应的表
         REPORT_TABLE_MAP.put("GZQY13", "dsa1_budgetreport_zcfzb");  // GZQY13报表对应的表
+        REPORT_TABLE_MAP.put("CWFY", "dsa1_budgetreport_cwfy");  // CWFY报表对应的表
+        REPORT_TABLE_MAP.put("GLFY", "dsa1_budgetreport_glfy");  // GLFY报表对应的表
+        REPORT_TABLE_MAP.put("XSFY", "dsa1_budgetreport_xsfy");  // XSFY报表对应的表
+
 
     }
 

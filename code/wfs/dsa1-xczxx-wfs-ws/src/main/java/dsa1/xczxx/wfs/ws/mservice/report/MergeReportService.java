@@ -15,6 +15,7 @@ import kd.bos.schedule.executor.AbstractTask;
 import kd.bos.servicehelper.QueryServiceHelper;
 import net.sf.json.JSONObject;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -48,6 +49,10 @@ public class MergeReportService extends AbstractTask {
         // 初始化报表配置
         REPORT_ACCOUNT_PREFIX_MAP.put("GZQY11", "Account!GZQY11");
         REPORT_ACCOUNT_PREFIX_MAP.put("GZQY13", "Account!GZQY13");
+        REPORT_ACCOUNT_PREFIX_MAP.put("CWFY", "Account!CWFY");
+        REPORT_ACCOUNT_PREFIX_MAP.put("XSFY", "Account!XSFY");
+        REPORT_ACCOUNT_PREFIX_MAP.put("GLFY", "Account!GLFY");
+
 
 
 //        // GZQY11报表的期间
@@ -79,21 +84,38 @@ public class MergeReportService extends AbstractTask {
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
        try {
+           logger.info("BudgetReportService begin");
+           logger.info("requestContext = {}",requestContext);
+           logger.info("map = {}",map);
            Map<String, String> systemConfigs = getSystemConfigs();
-
            String accountId = systemConfigs.get(ACCOUNT_ID_KEY);
            String tokenUrl = systemConfigs.get(TOKEN_URL_KEY);
            String reportQueryUrl = systemConfigs.get(REPORT_QUERY_URL);
            String reportNumber = systemConfigs.get(REPORTNUMBER);
            String orgs = systemConfigs.get(PARAM_ORGS);
-           String year = systemConfigs.get(PARAM_YEAR);
+           String year ;
+           String key = (String) map.get("key");
+           if ("automatic".equals(key)){
+               LocalDate now = LocalDate.now();
+               year = String.format("%d", now.getYear()); // 结果为 "2026"
+           }else{
+                year = systemConfigs.get(PARAM_YEAR);
+           }
            String gzqy13_version = systemConfigs.get(GZQY13_VERSION);
            String gzqy11_version = systemConfigs.get(GZQY11_VERSION);
 
            REPORT_PERIOD_MAP.put("GZQY13", generateYearEndPeriods(year));
            REPORT_PERIOD_MAP.put("GZQY11", generatePeriods(year));
+           REPORT_PERIOD_MAP.put("CWFY", generatePeriods(year));
+           REPORT_PERIOD_MAP.put("XSFY", generatePeriods(year));
+           REPORT_PERIOD_MAP.put("GLFY", generatePeriods(year));
+
            REPORT_VERSION_MAP.put("GZQY13",Arrays.asList(gzqy13_version.split(",")));
            REPORT_VERSION_MAP.put("GZQY11",Arrays.asList(gzqy11_version.split(",")));
+           REPORT_VERSION_MAP.put("CWFY",Arrays.asList(gzqy13_version.split(",")));
+           REPORT_VERSION_MAP.put("XSFY",Arrays.asList(gzqy13_version.split(",")));
+           REPORT_VERSION_MAP.put("GLFY",Arrays.asList(gzqy13_version.split(",")));
+
            List<String> reportNumbers = new ArrayList<>(Arrays.asList(reportNumber.split(",")));
            Map<String, List<String>> reportAccountsMap = queryAccountsForReports(reportNumbers);
 

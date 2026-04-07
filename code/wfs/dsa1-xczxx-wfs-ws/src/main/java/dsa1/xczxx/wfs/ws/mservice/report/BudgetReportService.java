@@ -17,6 +17,7 @@ import kd.bos.schedule.executor.AbstractTask;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,7 +26,7 @@ import static dsa1.xczxx.wfs.ws.mservice.report.FinancialDataSaver.saveFinancial
 
 public class BudgetReportService extends AbstractTask {
 
-    private final static Log log = LogFactory.getLog(MergeReportService.class);
+    private final static Log log = LogFactory.getLog(BudgetReportService.class);
 
     private static final String ACCOUNT_ID_KEY = "accountId";
     private static final String TOKEN_URL_KEY = "tokenUrl";
@@ -52,8 +53,8 @@ public class BudgetReportService extends AbstractTask {
     private static final String CSL_SCHEME_NUMBER = "ManageMergedViews";
     private static final String DIM_PROCESS = "Process";
     private static final String DIM_AUDIT_TRAIL = "AuditTrail";
-    private static final String DIM_PROCESS_VALUE = "EIRpt";
-    private static final String DIM_AUDIT_VALUE = "EntityInput";
+    private static final String DIM_PROCESS_VALUE = "ERpt";
+    private static final String DIM_AUDIT_VALUE = "ATTotal";
 
     // 请求头常量
     private static final String HEADER_ACCESS_TOKEN = "accessToken";
@@ -64,6 +65,11 @@ public class BudgetReportService extends AbstractTask {
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
         try {
+
+            log.info("BudgetReportService begin");
+            log.info("requestContext = {}",requestContext);
+            log.info("map = {}",map);
+
             //第一步获取token
             Map<String, Object> params = new HashMap<>();
             Map<String, String> systemConfigs = getSystemConfigs();
@@ -72,9 +78,22 @@ public class BudgetReportService extends AbstractTask {
             String mergeReportQueryUrl = systemConfigs.get(MERGE_REPORT_QUERY_URL_KEY);
             String orgs = systemConfigs.get(PARAM_ORGS);
             String tmps = systemConfigs.get(PARAM_TMPS);
-            String year = systemConfigs.get(PARAM_YEAR);
-            String period = systemConfigs.get(PARAM_PERIOD);
-            String[] periods = period.split(",");
+            String key = (String) map.get("key");
+            String[] periods;
+            String year;
+            if ("automatic".equals(key)){
+                LocalDate now = LocalDate.now();
+                String month = String.format("M_M%02d", now.getMonthValue()); // 结果为 "04"
+                // 如果需要赋值给 periods 变量，可以这样：
+                periods = new String[]{month};
+                 year = String.format("FY%d", now.getYear()); // 结果为 "FY2026"
+            }else{
+                String period = systemConfigs.get(PARAM_PERIOD);
+                 periods = period.split(",");
+                 year = systemConfigs.get(PARAM_YEAR);
+
+            }
+
 
             for (String singlePeriod : periods) {
                 Map<String, Object> requestData = buildRequestData(params, orgs, tmps, year, singlePeriod);

@@ -27,6 +27,8 @@ public class DeletebankaccountBalance extends AbstractOperationServicePlugIn {
             logger.info("dataEntities is null");
             return;
         }
+        logger.info("dataEntities.length = {}",dataEntities.length);
+
         Connection connection = DataActuator.getConnection();
         if (connection == null) {
             return;
@@ -39,6 +41,8 @@ public class DeletebankaccountBalance extends AbstractOperationServicePlugIn {
                 statement.addBatch(deleteBalance(dataEntitie))   ;
             }
             int[] i =  statement.executeBatch();
+            logger.info("i = {}",i);
+
             connection.commit();
             logger.info("executeBatch_largefund_bank_account_balance_detail delete end:" + flag);
 
@@ -50,8 +54,6 @@ public class DeletebankaccountBalance extends AbstractOperationServicePlugIn {
                 logger.error(exception1.getMessage(),exception1);
             }
             throw new KDBizException(exception, new ErrorCode("DeletebankaccountBalance",   exception.getMessage()));
-
-
         }finally {
             try {
                 if (statement != null) {

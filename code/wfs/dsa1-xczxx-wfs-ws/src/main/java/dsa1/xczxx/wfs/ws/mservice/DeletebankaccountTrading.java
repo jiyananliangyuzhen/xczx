@@ -12,7 +12,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 
 public class DeletebankaccountTrading extends AbstractOperationServicePlugIn {
@@ -28,6 +27,7 @@ public class DeletebankaccountTrading extends AbstractOperationServicePlugIn {
             logger.info("dataEntities is null");
             return;
         }
+        logger.info("dataEntities.length = {}",dataEntities.length);
         Connection connection = DataActuator.getConnection();
         if (connection == null) {
             return;
@@ -38,7 +38,9 @@ public class DeletebankaccountTrading extends AbstractOperationServicePlugIn {
             for (DynamicObject dataEntitie : dataEntities) {
                 statement.addBatch(deleteTrading(dataEntitie))   ;
             }
-            statement.executeBatch();
+          int [] i=  statement.executeBatch();
+            logger.info("i = {}",i);
+
             logger.info("executeBatch_largefund_bank_account_trading delete end:" + flag);
 
         }catch (Exception exception){
