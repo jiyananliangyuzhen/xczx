@@ -140,7 +140,9 @@ public class MergeReportService extends AbstractTask {
 
                    String response = doPost_token(JSON.toJSONString(requestData), reportQueryUrl, headers);
 
-                   // 处理响应数据，传入当前报表代码和科目列表
+               logger.info("response = {}",response);
+
+               // 处理响应数据，传入当前报表代码和科目列表
                    JSONObject responseJson = JSONObject.fromObject(response);
                    String result = createReportDataFromApi(responseJson, reportCode, accounts);
                logger.info("报表 {} 处理结果: {}", reportCode, result);

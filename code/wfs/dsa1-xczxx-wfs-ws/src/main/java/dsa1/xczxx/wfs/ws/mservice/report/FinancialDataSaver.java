@@ -15,9 +15,6 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -36,9 +33,6 @@ public class FinancialDataSaver {
 
     private static final Map<String, String[]> CQZ01_MAP = new HashMap<>();
 
-
-    private static final Log LOG = LogFactory.getLog(FinancialDataSaver.class);
-
     // 字段常量
     private static final String FIELD_ID = "id";
     private static final String FIELD_DURING = "dsa1_during";
@@ -53,9 +47,10 @@ public class FinancialDataSaver {
     private static final String FIELD_REPORT_NUMBER = "dsa1_reportnumber";
     private static final String FIELD_CREATE_TIME = "dsa1_createtime";
     private static final String FIELD_MODIFY_TIME = "dsa1_modifytime";
+    private static final Map<String, String[]> GLFY01_MAP = new HashMap<>();
 
     private static final Map<String, String[]> ZYYWSYB_MAP = new HashMap<>();
-
+    private static final Map<String, String[]> CWFY01_MAP = new HashMap<>();
     private static final Map<String, String> TABLE_NAME_MAP = new HashMap<>();
     private static final Map<String, Map<String, String[]>> REPORT_TYPE_FIELD_MAPS = new HashMap<>();
 
@@ -67,6 +62,8 @@ public class FinancialDataSaver {
         TABLE_NAME_MAP.put("BS01", "dsa1_mergereport_zcfzb");     // 资产负债表
         TABLE_NAME_MAP.put("CQZ01", "dsa1_mergereport_gzwkb");     // 国资委快报
         TABLE_NAME_MAP.put("ZYYWSYB", "dsa1_mergereport_zyyw"); //主要业务损益表
+        TABLE_NAME_MAP.put("CWFY01", "dsa1_mergereport_cwfy"); //财务费用明细表
+        TABLE_NAME_MAP.put("GLFY01", "dsa1_mergereport_glfy");  // 管理费用明细表
 
         // 初始化所有80个文本对应的字段映射
         // 格式：{文本关键字, [本期金额字段, 本年累计字段, 上年同期字段]}
@@ -399,17 +396,117 @@ public class FinancialDataSaver {
         ZYYWSYB_MAP.put("ZLLHJ07", new String[]{});   // 铺面租赁
         ZYYWSYB_MAP.put("ZLLHJ08", new String[]{});   // 租赁类-其他
         ZYYWSYB_MAP.put("ZYQT", new String[]{});      // 其他（主业）
-
-        // 将 ZYYWSYB 映射添加到 REPORT_TYPE_FIELD_MAPS
         REPORT_TYPE_FIELD_MAPS.put("ZYYWSYB", ZYYWSYB_MAP);
 
 
 
+        // 将 ZYYWSYB 映射添加到 REPORT_TYPE_FIELD_MAPS
+        // CWFY01 财务费用明细表映射
+        CWFY01_MAP.put("CWFY01", new String[]{});      // 手续费
+        CWFY01_MAP.put("CWFY02", new String[]{});      // 贷款费用
+        CWFY01_MAP.put("CWFY0201", new String[]{});    // 抵押
+        CWFY01_MAP.put("CWFY0202", new String[]{});    // 服务
+        CWFY01_MAP.put("CWFY03", new String[]{});      // 利息支出
+        CWFY01_MAP.put("CWFY0301", new String[]{});    // 银行贷款利息支出
+        CWFY01_MAP.put("CWFY0302", new String[]{});    // 租赁负债利息支出
+        CWFY01_MAP.put("CWFY0303", new String[]{});    // 汇票贴现支出
+        CWFY01_MAP.put("CWFY0304", new String[]{});    // 内部借款利息支出
+        CWFY01_MAP.put("CWFY0305", new String[]{});    // 其他
+        CWFY01_MAP.put("CWFY04", new String[]{});      // 利息收入
+        CWFY01_MAP.put("CWFY0401", new String[]{});    // 银行存款利息收入
+        CWFY01_MAP.put("CWFY0402", new String[]{});    // 内部存款利息收入
+        CWFY01_MAP.put("CWFY0403", new String[]{});    // 客户逾期利息收入
+        CWFY01_MAP.put("CWFY0404", new String[]{});    // 其他
+        CWFY01_MAP.put("CWFY05", new String[]{});      // 现金折扣
+        CWFY01_MAP.put("CWFY06", new String[]{});      // 其他费用
+
+        // 将 CWFY01 映射添加到 REPORT_TYPE_FIELD_MAPS
+        REPORT_TYPE_FIELD_MAPS.put("CWFY01", CWFY01_MAP);
 
 
+// GLFY01 管理费用明细表映射
+        GLFY01_MAP.put("GLFY01", new String[]{});      // 人工成本
+        GLFY01_MAP.put("GLFY0101", new String[]{});    // 职工薪酬
+        GLFY01_MAP.put("GLFY0102", new String[]{});    // 职工福利费
+        GLFY01_MAP.put("GLFY0103", new String[]{});    // 社会保险费
+        GLFY01_MAP.put("GLFY0104", new String[]{});    // 住房公积金
+        GLFY01_MAP.put("GLFY0105", new String[]{});    // 职工教育经费
+        GLFY01_MAP.put("GLFY0106", new String[]{});    // 工会经费
+        GLFY01_MAP.put("GLFY0107", new String[]{});    // 劳保费
+        GLFY01_MAP.put("GLFY0108", new String[]{});    // 非货币性福利
+        GLFY01_MAP.put("GLFY0109", new String[]{});    // 辞退福利
+        GLFY01_MAP.put("GLFY0110", new String[]{});    // 企业年金
+        GLFY01_MAP.put("GLFY0111", new String[]{});    // 其他
+        GLFY01_MAP.put("GLFY02", new String[]{});      // 劳务费
+        GLFY01_MAP.put("GLFY03", new String[]{});      // 办公费
+        GLFY01_MAP.put("GLFY0301", new String[]{});    // 办公用品费
+        GLFY01_MAP.put("GLFY0302", new String[]{});    // 报刊费
+        GLFY01_MAP.put("GLFY0303", new String[]{});    // 快递费
+        GLFY01_MAP.put("GLFY0304", new String[]{});    // 图文印刷
+        GLFY01_MAP.put("GLFY0305", new String[]{});    // 其他
+        GLFY01_MAP.put("GLFY04", new String[]{});      // 差旅费
+        GLFY01_MAP.put("GLFY05", new String[]{});      // 通讯费
+        GLFY01_MAP.put("GLFY0501", new String[]{});    // 电话费
+        GLFY01_MAP.put("GLFY0502", new String[]{});    // 网络费
+        GLFY01_MAP.put("GLFY0503", new String[]{});    // 其他
+        GLFY01_MAP.put("GLFY06", new String[]{});      // 车辆使用费
+        GLFY01_MAP.put("GLFY0601", new String[]{});    // 燃油费
+        GLFY01_MAP.put("GLFY0602", new String[]{});    // 保养费
+        GLFY01_MAP.put("GLFY0603", new String[]{});    // 年审及保险费
+        GLFY01_MAP.put("GLFY0604", new String[]{});    // 过路过桥费与停车费
+        GLFY01_MAP.put("GLFY0605", new String[]{});    // 车辆租赁
+        GLFY01_MAP.put("GLFY0606", new String[]{});    // 其他
+        GLFY01_MAP.put("GLFY07", new String[]{});      // 折旧费
+        GLFY01_MAP.put("GLFY0701", new String[]{});    // 固定资产
+        GLFY01_MAP.put("GLFY0702", new String[]{});    // 使用权资产
+        GLFY01_MAP.put("GLFY08", new String[]{});      // 维修保养费
+        GLFY01_MAP.put("GLFY0801", new String[]{});    // 房屋维修费
+        GLFY01_MAP.put("GLFY0802", new String[]{});    // 设备维修费
+        GLFY01_MAP.put("GLFY0803", new String[]{});    // 其他
+        GLFY01_MAP.put("GLFY09", new String[]{});      // 保险费
+        GLFY01_MAP.put("GLFY10", new String[]{});      // 低值易耗品摊销
+        GLFY01_MAP.put("GLFY11", new String[]{});      // 会议费
+        GLFY01_MAP.put("GLFY12", new String[]{});      // 董事会费
+        GLFY01_MAP.put("GLFY13", new String[]{});      // 业务招待费
+        GLFY01_MAP.put("GLFY14", new String[]{});      // 坏账损失
+        GLFY01_MAP.put("GLFY15", new String[]{});      // 广告宣传费
+        GLFY01_MAP.put("GLFY16", new String[]{});      // 残疾人保障金
+        GLFY01_MAP.put("GLFY17", new String[]{});      // 租赁费
+        GLFY01_MAP.put("GLFY1701", new String[]{});    // 房屋租赁
+        GLFY01_MAP.put("GLFY1702", new String[]{});    // 设备租赁
+        GLFY01_MAP.put("GLFY1703", new String[]{});    // 其他
+        GLFY01_MAP.put("GLFY18", new String[]{});      // 无形资产摊销
+        GLFY01_MAP.put("GLFY19", new String[]{});      // 聘请中介机构费
+        GLFY01_MAP.put("GLFY1901", new String[]{});    // 审计费
+        GLFY01_MAP.put("GLFY1902", new String[]{});    // 评估费
+        GLFY01_MAP.put("GLFY1903", new String[]{});    // 司法费
+        GLFY01_MAP.put("GLFY1904", new String[]{});    // 咨询费
+        GLFY01_MAP.put("GLFY1905", new String[]{});    // 融资服务
+        GLFY01_MAP.put("GLFY1906", new String[]{});    // 信用评级
+        GLFY01_MAP.put("GLFY1907", new String[]{});    // 产权服务
+        GLFY01_MAP.put("GLFY1908", new String[]{});    // 其他
+        GLFY01_MAP.put("GLFY20", new String[]{});      // 党务经费
+        GLFY01_MAP.put("GLFY21", new String[]{});      // 系统建设费
+        GLFY01_MAP.put("GLFY22", new String[]{});      // 水费
+        GLFY01_MAP.put("GLFY23", new String[]{});      // 电费
+        GLFY01_MAP.put("GLFY24", new String[]{});      // 安全生产费
+        GLFY01_MAP.put("GLFY25", new String[]{});      // 协会费
+        GLFY01_MAP.put("GLFY26", new String[]{});      // 长期待摊费用
+        GLFY01_MAP.put("GLFY27", new String[]{});      // 档案管理费
+        GLFY01_MAP.put("GLFY28", new String[]{});      // 物业费
+        GLFY01_MAP.put("GLFY29", new String[]{});      // 研发费用
+        GLFY01_MAP.put("GLFY30", new String[]{});      // 物料消耗
+        GLFY01_MAP.put("GLFY31", new String[]{});      // 团员费
+        GLFY01_MAP.put("GLFY32", new String[]{});      // 纪检经费
+        GLFY01_MAP.put("GLFY33", new String[]{});      // 服务费
+        GLFY01_MAP.put("GLFY3301", new String[]{});    // 融资咨询服务
+        GLFY01_MAP.put("GLFY3302", new String[]{});    // 投资顾问服务
+        GLFY01_MAP.put("GLFY3303", new String[]{});    // 运营服务
+        GLFY01_MAP.put("GLFY34", new String[]{});      // 其他
+        GLFY01_MAP.put("GLFY", new String[]{});        // 管理费用明细
 
-
-
+        // 将 GLFY01 映射添加到 REPORT_TYPE_FIELD_MAPS
+        REPORT_TYPE_FIELD_MAPS.put("GLFY01", GLFY01_MAP);
 
         // 添加其他报表类型的映射
 
@@ -421,6 +518,9 @@ public class FinancialDataSaver {
      */
     public static boolean saveFinancialData(String data,
                                             Map<String, Object> params) {
+
+
+        log.warn("saveFinancialData begin ");
         try {
             if (StringUtils.isBlank(data)) {
                 log.warn("保存财务数据失败：数据为空");
@@ -435,17 +535,16 @@ public class FinancialDataSaver {
                     return false;
                 }
                 // 预加载所有需要的组织信息
+                log.info("apiResponse.getData() = {}",apiResponse.getData());
                 Set<String> allEntities = extractAllEntities(apiResponse.getData());
                 Map<String, DynamicObject> entityMap = BudgetReportService.queryEntities(new ArrayList<>(allEntities));
                 int successCount = 0;
-                LocalDateTime now = LocalDateTime.now();
                 for (DataItem dataItem : apiResponse.getData()) {
-                    boolean success = processDataItem(dataItem, params, entityMap, now);
+                    boolean success = processDataItem(dataItem, params, entityMap);
                     if (success) {
                         successCount++;
                     }
                 }
-
                 log.info("财务数据保存完成，成功: {}/{}", successCount, apiResponse.getData().size());
                 return successCount > 0;
 
@@ -462,33 +561,12 @@ public class FinancialDataSaver {
         }
     }
 
-    private List<String> generatePeriods(String year) {
-        List<String> periods = new ArrayList<>();
-        int yearNum = Integer.parseInt(year);
-        String nextYear = String.valueOf(yearNum + 1);
-
-        // 添加年度期间
-        periods.add("FY" + year);
-        periods.add("FY" + nextYear);
-
-        // 添加下一年的月份期间
-        for (int month = 1; month <= 12; month++) {
-            periods.add(String.format("FY%s.M%02d", nextYear, month));
-        }
-
-        // 添加当前年的月份期间
-        for (int month = 1; month <= 12; month++) {
-            periods.add(String.format("FY%s.M%02d", year, month));
-        }
-
-        return periods;
-    }
 
     /**
      * 处理单个数据项
      */
     private static boolean processDataItem(DataItem dataItem, Map<String, Object> params,
-                                           Map<String, DynamicObject> entityMap, LocalDateTime now) {
+                                           Map<String, DynamicObject> entityMap) {
         try {
             // 提取基础信息
             String reportNumber = dataItem.getTempNum();
@@ -499,47 +577,17 @@ public class FinancialDataSaver {
                 return false;
             }
             if ("ZYYWSYB".equals(reportNumber)) {
-                return processZyywsybData(dataItem, params, entityMap, now);
-            }
-            String year = pageDims.get("Year");
-            String period = pageDims.get("Period");
-            String entity = pageDims.get("Entity");
-            String tempNum = dataItem.getTempNum();
-            String tableName = TABLE_NAME_MAP.get(tempNum);
-
-            if (Stream.of(year, period, entity).anyMatch(s -> s == null || s.trim().isEmpty())) {
-                LOG.warn("数据项缺少必要的维度信息: year={}, period={}, entity={}", year, period, entity);
-                return false;
+                return processZyywsybData(dataItem, entityMap);
             }
 
-            // 获取对应报表类型的字段映射
-            Map<String, String[]> fieldMapping = REPORT_TYPE_FIELD_MAPS.get(tempNum); // 默认使用利润表映射
-
-            // 如果找不到映射，直接返回false，不执行该条数据
-            if (fieldMapping == null) {
-                log.warn("跳过报表类型 {} 的数据：未配置字段映射", tempNum);
-                return false;
+            // 特殊处理 CWFY01 和 GLFY01 报表（结构相同，共用处理方法）
+            if ("CWFY01".equals(reportNumber) || "GLFY01".equals(reportNumber)) {
+                return processExpenseDetailData(dataItem, entityMap);
             }
 
-            // 提取数据
-            List<List<Object>> allData = DataExtractor.extractAllDatas(dataItem);
-            if (CollectionUtils.isEmpty(allData)) {
-                log.warn("数据项没有数据内容: {}", reportNumber);
-                return false;
-            }
+            // CPL01、BS01、CF01、CQZ01 统一处理
+            return processStandardReport(dataItem, params, entityMap);
 
-            // 创建并填充数据对象
-            DynamicObject financialData = createFinancialData(dataItem, params, year, period, entity, entityMap, tableName);
-
-
-            // 设置金额数据
-            setAmountData(financialData, allData, tableName, fieldMapping);
-
-            // 判断是新增还是更新
-            DynamicObject existingData = findExistingData(financialData, tableName);
-
-            // 保存数据
-            return saveOrUpdate(financialData, existingData, tableName);
 
         } catch (Exception e) {
             log.error("处理数据项失败: {}", e.getMessage(), e);
@@ -564,15 +612,14 @@ public class FinancialDataSaver {
                     filters.toArray(new QFilter[0]));
 
         } catch (Exception e) {
-            LOG.debug("查找已存在数据失败: {}", e.getMessage());
+            log.debug("查找已存在数据失败: {}", e.getMessage());
             return null;
         }
     }
 
     private static DynamicObject getOrgMapping(String number) {
         try {
-            DynamicObject orgMapping = BusinessDataServiceHelper.loadSingle("dsa1_reportorgmapping", "number,name", new QFilter[]{new QFilter("dsa1_hborgnumber", QCP.equals, number)});
-            return  orgMapping  ;
+            return BusinessDataServiceHelper.loadSingle("dsa1_reportorgmapping", "number,name", new QFilter[]{new QFilter("dsa1_hborgnumber", QCP.equals, number)});
         }catch (Exception e){
             log.error("getOrgMapping: {}", e.getMessage(), e);
             return null;
@@ -585,7 +632,6 @@ public class FinancialDataSaver {
     private static boolean saveOrUpdate(DynamicObject financialData, DynamicObject existingData, String tableName
     ) {
         try {
-//            String nowStr = DATE_FORMATTER.format(now);
             Date now = new Date();
             if (existingData == null) {
                 // 新增
@@ -679,30 +725,7 @@ public class FinancialDataSaver {
         return entities;
     }
 
-    public static DynamicObject judgeReportOperation(DynamicObject financialData) {
-        DynamicObject mergereport;
-        try {
 
-            QFilter[] filters = {
-                    new QFilter("dsa1_orgs", QCP.equals, financialData.getLong("dsa1_orgs")),
-                    new QFilter("dsa1_currency", QCP.equals, financialData.get("dsa1_currency")),
-                    new QFilter("dsa1_scene", QCP.equals, financialData.get("dsa1_scene")),
-                    new QFilter("dsa1_modelNum", QCP.equals, financialData.get("dsa1_modelNum")),
-                    new QFilter("dsa1_during", QCP.equals, financialData.get("dsa1_during")),
-                    new QFilter("dsa1_years", QCP.equals, financialData.get("dsa1_years")),
-                    new QFilter("dsa1_months", QCP.equals, financialData.get("dsa1_months")),
-            };
-
-            mergereport = BusinessDataServiceHelper.loadSingle("dsa1_mergereport", "id",
-                    filters);
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            return null;
-        }
-
-
-        return mergereport;
-    }
 
     /**
      * 设置金额数据 - 支持动态字段映射和灵活的数据格式
@@ -728,7 +751,7 @@ public class FinancialDataSaver {
             String code = extractCode(textWithCode);      // 提取前面的编码，如 "R1043"
 
             if (StringUtils.isBlank(code)) {
-                LOG.debug("行数据没有有效的科目编码: {}", textWithCode);
+                log.info("行数据没有有效的科目编码: {}", textWithCode);
                 continue;
             }
 
@@ -736,7 +759,7 @@ public class FinancialDataSaver {
             List<BigDecimal> amountValues = extractAmountValues(row, tempNum);
 
             if (amountValues.isEmpty()) {
-                LOG.debug("行数据没有金额值: 编码={}", code);
+                log.info("行数据没有金额值: 编码={}", code);
                 continue;
             }
 
@@ -747,12 +770,12 @@ public class FinancialDataSaver {
                 matchedCount.incrementAndGet();
             } else {
                 unmatchedCount.incrementAndGet();
-                LOG.debug("未匹配的科目编码: {}, 报表类型={}", code, tempNum);
+                log.info("未匹配的科目编码: {}, 报表类型={}", code, tempNum);
             }
         }
 
         if (unmatchedCount.get() > 0) {
-            LOG.info("报表类型 {} 处理完成：匹配 {} 条，未匹配 {} 条",
+            log.info("报表类型 {} 处理完成：匹配 {} 条，未匹配 {} 条",
                     tempNum, matchedCount.get(), unmatchedCount.get());
         }
     }
@@ -811,6 +834,7 @@ public class FinancialDataSaver {
             for (int i = 0; i < Math.min(fieldNames.length, amountValues.size()); i++) {
                 if (fieldNames[i] != null && amountValues.get(i) != null) {
                     financialData.set(fieldNames[i], amountValues.get(i));
+                    log.info("financialData.set(fieldNames[i] = {}, amountValues.get(i) = {})",fieldNames[i],amountValues.get(i));
                 }
             }
             return true;
@@ -842,39 +866,26 @@ public class FinancialDataSaver {
         return amounts;
     }
 
-    /**
-     * 获取报表类型的金额列数
-     */
-//    private static int getAmountColumnCount(String tempNum) {
-//        switch (tempNum) {
-//            case "CPL01": // 利润表 - 3个金额（本期、本年累计、上年同期）
-//                return 3;
-//            case "BS01":  // 资产负债表 - 2个金额（期末余额、年初余额）
-//            case "CQY01": // 资产负债表 - 2个金额
-//                return 2;
-//            case "CF01":  // 现金流量表 - 可能是2或3个金额
-//                return 3;
-//            default:
-//                return 3; // 默认3个金额
-//        }
-//    }
+
 
     private static int getAmountColumnCount(String tempNum) {
         switch (tempNum) {
-            case "CPL01": // 利润表 - 3个金额（本期、本年累计、上年同期）
+            case "CPL01":
                 return 3;
-            case "BS01":  // 资产负债表 - 2个金额（期末余额、年初余额）
-            case "CQY01": // 资产负债表 - 2个金额
+            case "BS01":
+            case "CQY01":
                 return 2;
-            case "CF01":  // 现金流量表 - 可能是2或3个金额
+            case "CF01":
                 return 3;
-            case "ZYYWSYB": // 主要业务损益情况表 - 24个字段，但我们只取3个金额
+            case "ZYYWSYB":
                 return 24;
+            case "CWFY01":
+            case "GLFY01":
+                return 5;
             default:
-                return 3; // 默认3个金额
+                return 3;
         }
     }
-
 
 
     /**
@@ -891,31 +902,16 @@ public class FinancialDataSaver {
         }
     }
 
-    /**
-     * 生成ID
-     */
-    private static String generateId(String reportPeriod, String entityCode) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmssSSS");
-        return "FIN_" + entityCode + "_" + reportPeriod + "_" + sdf.format(new Date());
-    }
 
-    /**
-     * 处理保存结果
-     */
-    private static boolean handleSaveResult(OperationResult saveResult, String reportPeriod, String entityCode) {
-        if (saveResult.isSuccess()) {
-            System.out.println("保存报表数据成功: " + reportPeriod + ", " + entityCode);
-            return true;
-        } else {
-            return false;
-        }
-    }
+
+
 
 
     // 新增专门处理 ZYYWSYB 的方法
-    private static boolean processZyywsybData(DataItem dataItem, Map<String, Object> params,
-                                              Map<String, DynamicObject> entityMap, LocalDateTime now) {
+    private static boolean processZyywsybData(DataItem dataItem,
+                                              Map<String, DynamicObject> entityMap) {
         try {
+            log.info("processZyywsybData begin and tempNum = {}",dataItem.getTempNum());
             Map<String, String> pageDims = dataItem.getPageDims();
             if (pageDims == null) {
                 log.warn("ZYYWSYB数据项缺少页面维度信息");
@@ -928,7 +924,7 @@ public class FinancialDataSaver {
             String tempNum = dataItem.getTempNum();
 
             if (Stream.of(year, period, entity).anyMatch(s -> s == null || s.trim().isEmpty())) {
-                LOG.warn("ZYYWSYB缺少必要的维度信息: year={}, period={}, entity={}", year, period, entity);
+                log.warn("ZYYWSYB缺少必要的维度信息: year={}, period={}, entity={}", year, period, entity);
                 return false;
             }
 
@@ -973,10 +969,11 @@ public class FinancialDataSaver {
                 if (StringUtils.isBlank(accountCode)) {
                     continue;
                 }
-
+                // 计算项目分类（去掉"合计"）
+                String projectCategory = getProjectCategory(accountName);
                 // 处理4个指标
                 boolean result = saveIndicatorRecord(orgId, orgName, orgNumber, during, yearNum, month,
-                        pageDims, accountCode, accountName,  row, nowDate, tempNum);
+                        pageDims, accountCode, accountName, projectCategory, row, nowDate, tempNum);
 
                 if (result) {
                     successCount++;
@@ -1034,7 +1031,7 @@ public class FinancialDataSaver {
     private static boolean saveIndicatorRecord(Long orgId, String orgName, String orgNumber,
                                                String during, String yearNum, String month,
                                                Map<String, String> pageDims, String accountCode,
-                                               String accountName,
+                                               String accountName,String projectCategory,
                                                List<Object> row, Date nowDate, String tempNum) {
 
         // 定义指标配置
@@ -1062,6 +1059,7 @@ public class FinancialDataSaver {
             financialData.set("dsa1_reportnumber", tempNum);
             financialData.set("dsa1_account", accountCode);
             financialData.set("dsa1_accountname", accountName);
+            financialData.set("dsa1_projectcategory", projectCategory);
             financialData.set("dsa1_accountclassificati", config.indicatorName);
 
             // 设置金额
@@ -1117,7 +1115,7 @@ public class FinancialDataSaver {
             };
             return BusinessDataServiceHelper.loadSingle("dsa1_mergereport_zyyw", "id", filters);
         } catch (Exception e) {
-            LOG.debug("查找已存在ZYYWSYB数据失败: {}", e.getMessage());
+            log.debug("查找已存在ZYYWSYB数据失败: {}", e.getMessage());
             return null;
         }
     }
@@ -1148,6 +1146,242 @@ public class FinancialDataSaver {
             this.bnljsIndex = bnljsIndex;
             this.sntqsIndex = sntqsIndex;
         }
+    }
+
+
+
+
+
+    /**
+     * 处理费用明细表（CWFY01 财务费用明细表、GLFY01 管理费用明细表）
+     * 数据格式：每个集合有5个元素
+     * 索引0: 科目编码|名称
+     * 索引1: 本期数
+     * 索引2: 本年累计数
+     * 索引3: 上年累计数
+     * 索引4: 同比增减率（暂不存储）
+     */
+    private static boolean processExpenseDetailData(DataItem dataItem,
+                                                    Map<String, DynamicObject> entityMap) {
+        log.info("processExpenseDetailData begin and tempNum  = {}",dataItem.getTempNum());
+        try {
+            Map<String, String> pageDims = dataItem.getPageDims();
+            if (pageDims == null) {
+                log.warn("{}数据项缺少页面维度信息", dataItem.getTempNum());
+                return false;
+            }
+
+            String year = pageDims.get("Year");
+            String period = pageDims.get("Period");
+            String entity = pageDims.get("Entity");
+            String tempNum = dataItem.getTempNum();
+
+            // 根据报表类型获取表名
+            String tableName = TABLE_NAME_MAP.get(tempNum);
+            if (StringUtils.isBlank(tableName)) {
+                log.warn("未找到报表 {} 对应的表名", tempNum);
+                return false;
+            }
+
+            if (Stream.of(year, period, entity).anyMatch(s -> s == null || s.trim().isEmpty())) {
+                log.warn("{}缺少必要的维度信息: year={}, period={}, entity={}", tempNum, year, period, entity);
+                return false;
+            }
+
+            // 提取所有数据（有些报表可能有多个 area）
+            List<List<Object>> allData = DataExtractor.extractAllDatas(dataItem);
+
+
+            if (CollectionUtils.isEmpty(allData)) {
+                log.warn("{}数据项没有数据内容", tempNum);
+                return false;
+            }
+
+            // 处理期间信息
+            String yearNum = year.substring(2);  // FY2026 -> 2026
+            String month = period.substring(3);  // M_M01 -> 01
+            String during = yearNum + month;     // 202601
+
+            // 获取组织信息
+            DynamicObject org = entityMap.get(entity);
+            if (org == null) {
+                log.warn("{}未找到组织信息: {}", tempNum, entity);
+                return false;
+            }
+
+            DynamicObject orgMapping = getOrgMapping(org.getString("number"));
+            Long orgId = org.getLong("id");
+            String orgName = orgMapping != null ? orgMapping.getString("name") : org.getString("name");
+            String orgNumber = orgMapping != null ? orgMapping.getString("number") : org.getString("number");
+
+            int successCount = 0;
+            Date nowDate = new Date();
+
+            for (List<Object> row : allData) {
+                if (row == null || row.isEmpty()) {
+                    continue;
+                }
+
+                // 解析科目信息（索引0：科目编码|名称）
+                String accountInfo = Objects.toString(row.get(0), "");
+                String[] accountArr = parseAccountInfo(accountInfo);
+                String accountCode = accountArr[0];
+                String accountName = accountArr[1];
+
+                if (StringUtils.isBlank(accountCode)) {
+                    continue;
+                }
+
+                // 保存费用明细记录
+                boolean result = saveExpenseDetailRecord(orgId, orgName, orgNumber, during, yearNum, month,
+                        pageDims, accountCode, accountName, row, nowDate, tempNum, tableName);
+
+                if (result) {
+                    successCount++;
+                }
+            }
+
+            log.info("{}数据处理完成，成功保存 {} 条记录", tempNum, successCount);
+            return successCount > 0;
+
+        } catch (Exception e) {
+            log.error("处理费用明细表数据失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 保存费用明细记录（通用方法，适用于 CWFY01、GLFY01 等）
+     * @param row 数据行，包含5个元素
+     *       索引0: 科目编码|名称
+     *       索引1: 本期数
+     *       索引2: 本年累计数
+     *       索引3: 上年累计数
+     *       索引4: 同比增减率（暂不存储）
+     * @param tableName 目标表名
+     */
+    private static boolean saveExpenseDetailRecord(Long orgId, String orgName, String orgNumber,
+                                                   String during, String yearNum, String month,
+                                                   Map<String, String> pageDims, String accountCode,
+                                                   String accountName, List<Object> row,
+                                                   Date nowDate, String tempNum, String tableName) {
+
+        DynamicObject financialData = BusinessDataServiceHelper.newDynamicObject(tableName);
+
+        // 设置基础维度
+        financialData.set("dsa1_orgs", orgId);
+        financialData.set("dsa1_companyname", orgName);
+        financialData.set("dsa1_orgnumber", orgNumber);
+        financialData.set("dsa1_during", during);
+        financialData.set("dsa1_years", yearNum);
+        financialData.set("dsa1_months", month);
+        financialData.set("dsa1_currency", pageDims.get("Currency"));
+        financialData.set("dsa1_scene", pageDims.get("Scenario"));
+        financialData.set("dsa1_modelNum", "XCZX001");
+        financialData.set("dsa1_reportnumber", tempNum);
+        financialData.set("dsa1_account", accountCode);
+        financialData.set("dsa1_accountname", accountName);
+
+        // 设置金额
+        financialData.set("dsa1_bqs", parseBigDecimal(getValueFromRow(row, 1)));    // 本期数
+        financialData.set("dsa1_bnljs", parseBigDecimal(getValueFromRow(row, 2)));  // 本年累计数
+        financialData.set("dsa1_snljs", parseBigDecimal(getValueFromRow(row, 3)));  // 上年累计数
+        // 索引4: 同比增减率（暂不存储，预留字段）
+
+        financialData.set("dsa1_modifytime", nowDate);
+
+        // 查询是否存在（组织 + 期间 + 科目）
+        DynamicObject existingData = findExpenseDetailExistingData(orgId, during, accountCode, tableName);
+
+        boolean saveResult;
+        if (existingData == null) {
+            financialData.set("dsa1_createtime", nowDate);
+            OperationResult result = SaveServiceHelper.saveOperate(
+                    tableName,
+                    new DynamicObject[]{financialData},
+                    OperateOption.create()
+            );
+            saveResult = result != null && result.isSuccess();
+            if (saveResult) {
+                log.debug("新增{}记录成功: 科目={}, 期间={}", tempNum, accountCode, during);
+            }
+        } else {
+            financialData.set("id", existingData.getLong("id"));
+            SaveServiceHelper.update(new DynamicObject[]{financialData});
+            saveResult = true;
+            log.debug("更新{}记录成功: 科目={}, 期间={}", tempNum, accountCode, during);
+        }
+
+        if (!saveResult) {
+            log.warn("保存{}记录失败: 科目={}, 期间={}", tempNum, accountCode, during);
+        }
+        return saveResult;
+    }
+
+    /**
+     * 查询已存在的费用明细记录（通用方法）
+     * 去重维度：组织 + 期间 + 科目编码
+     */
+    private static DynamicObject findExpenseDetailExistingData(Long orgId, String during,
+                                                               String accountCode, String tableName) {
+        try {
+            QFilter[] filters = {
+                    new QFilter("dsa1_orgs", QCP.equals, orgId),
+                    new QFilter("dsa1_during", QCP.equals, during),
+                    new QFilter("dsa1_account", QCP.equals, accountCode)
+            };
+            return BusinessDataServiceHelper.loadSingle(tableName, "id", filters);
+        } catch (Exception e) {
+            log.debug("查找已存在数据失败: table={}, 科目={}", tableName, accountCode);
+            return null;
+        }
+    }
+
+
+
+    /**
+     * 标准报表处理方法（适用于 CPL01、BS01、CF01、CQZ01）
+     */
+    private static boolean processStandardReport(DataItem dataItem, Map<String, Object> params,
+                                                 Map<String, DynamicObject> entityMap ) {
+       log.info("processStandardReport begin and tempNum = {}",dataItem.getTempNum());
+        Map<String, String> pageDims = dataItem.getPageDims();
+        String year = pageDims.get("Year");
+        String period = pageDims.get("Period");
+        String entity = pageDims.get("Entity");
+        String tempNum = dataItem.getTempNum();
+        String tableName = TABLE_NAME_MAP.get(tempNum);
+
+        if (Stream.of(year, period, entity).anyMatch(s -> s == null || s.trim().isEmpty())) {
+            log.warn("数据项缺少必要的维度信息: year={}, period={}, entity={}", year, period, entity);
+            return false;
+        }
+
+        // 获取对应报表类型的字段映射
+        Map<String, String[]> fieldMapping = REPORT_TYPE_FIELD_MAPS.get(tempNum);
+        if (fieldMapping == null) {
+            log.warn("跳过报表类型 {} 的数据：未配置字段映射", tempNum);
+            return false;
+        }
+
+        // 提取数据
+        List<List<Object>> allData = DataExtractor.extractAllDatas(dataItem);
+        if (CollectionUtils.isEmpty(allData)) {
+            log.warn("数据项没有数据内容: {}", tempNum);
+            return false;
+        }
+
+        // 创建并填充数据对象
+        DynamicObject financialData = createFinancialData(dataItem, params, year, period, entity, entityMap, tableName);
+
+        // 设置金额数据
+        setAmountData(financialData, allData, tableName, fieldMapping);
+
+        // 判断是新增还是更新
+        DynamicObject existingData = findExistingData(financialData, tableName);
+
+        // 保存数据
+        return saveOrUpdate(financialData, existingData, tableName);
     }
 
 }

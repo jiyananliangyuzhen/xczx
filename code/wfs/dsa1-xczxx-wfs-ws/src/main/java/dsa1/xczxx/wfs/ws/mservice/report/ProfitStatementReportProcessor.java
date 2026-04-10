@@ -400,6 +400,7 @@ public class ProfitStatementReportProcessor {
             }
 
             JSONArray dataArray = apiResponse.getJSONArray("data");
+            log.info("dataArray = {}",dataArray);
             if (dataArray == null || dataArray.size() < 2) {
                 return "无有效数据";
             }

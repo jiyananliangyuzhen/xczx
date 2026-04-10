@@ -33,7 +33,6 @@ public class BudgetReportService extends AbstractTask {
     private static final String REPORT_QUERY_URL = "reportQueryUrl";
     private static final String MERGE_REPORT_QUERY_URL = "mergeReportQueryUrl";
     private static final String DIMENSION_NUMBER = "Entity";
-    private static final String MODEL_SHOWNUMBER = "XCZX001";
     private static final String SCENE = "MRpt";
 
     // 报表查询参数常量
@@ -69,6 +68,7 @@ public class BudgetReportService extends AbstractTask {
             log.info("BudgetReportService begin");
             log.info("requestContext = {}",requestContext);
             log.info("map = {}",map);
+            log.info("111111111111111111111111111111111");
 
             //第一步获取token
             Map<String, Object> params = new HashMap<>();
@@ -93,8 +93,6 @@ public class BudgetReportService extends AbstractTask {
                  year = systemConfigs.get(PARAM_YEAR);
 
             }
-
-
             for (String singlePeriod : periods) {
                 Map<String, Object> requestData = buildRequestData(params, orgs, tmps, year, singlePeriod);
 
@@ -104,6 +102,8 @@ public class BudgetReportService extends AbstractTask {
 
                 // 发送请求
                 String response = sendReportRequest(requestData, token, mergeReportQueryUrl);
+                log.info("response = {}",response);
+
                 saveFinancialData(response, params);
                 log.info("合并报表同步任务执行完成");
             }
@@ -248,12 +248,13 @@ public class BudgetReportService extends AbstractTask {
         // 基础参数
         params.put(PARAM_MODEL_NUM, getStringParam(taskParams, PARAM_MODEL_NUM, MODEL_NUMBER));
         params.put(PARAM_SCENE, getStringParam(taskParams, PARAM_SCENE, SCENE));
-        params.put(PARAM_CURRENCY, getStringParam(taskParams, PARAM_CURRENCY, "EC"));
+        params.put(PARAM_CURRENCY, getStringParam(taskParams, PARAM_CURRENCY, "DC"));
 
         // 维度参数
         Map<String, Object> dimMemberMap = new HashMap<>();
         dimMemberMap.put(DIM_PROCESS, DIM_PROCESS_VALUE);
         dimMemberMap.put(DIM_AUDIT_TRAIL, DIM_AUDIT_VALUE);
+
 
         // 如果任务参数中包含自定义维度映射，则合并
         if (taskParams != null && taskParams.get(PARAM_DIM2_MEMS) instanceof Map) {
