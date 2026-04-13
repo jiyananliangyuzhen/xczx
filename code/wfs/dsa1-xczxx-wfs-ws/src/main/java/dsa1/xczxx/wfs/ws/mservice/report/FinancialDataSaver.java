@@ -48,6 +48,7 @@ public class FinancialDataSaver {
     private static final String FIELD_CREATE_TIME = "dsa1_createtime";
     private static final String FIELD_MODIFY_TIME = "dsa1_modifytime";
     private static final Map<String, String[]> GLFY01_MAP = new HashMap<>();
+    private static final Map<String, String[]> XSFY01_MAP = new HashMap<>();
 
     private static final Map<String, String[]> ZYYWSYB_MAP = new HashMap<>();
     private static final Map<String, String[]> CWFY01_MAP = new HashMap<>();
@@ -64,6 +65,7 @@ public class FinancialDataSaver {
         TABLE_NAME_MAP.put("ZYYWSYB", "dsa1_mergereport_zyyw"); //主要业务损益表
         TABLE_NAME_MAP.put("CWFY01", "dsa1_mergereport_cwfy"); //财务费用明细表
         TABLE_NAME_MAP.put("GLFY01", "dsa1_mergereport_glfy");  // 管理费用明细表
+        TABLE_NAME_MAP.put("XSFY01", "dsa1_mergereport_xsfy"); // 销售费用明细表
 
         // 初始化所有80个文本对应的字段映射
         // 格式：{文本关键字, [本期金额字段, 本年累计字段, 上年同期字段]}
@@ -508,6 +510,62 @@ public class FinancialDataSaver {
         // 将 GLFY01 映射添加到 REPORT_TYPE_FIELD_MAPS
         REPORT_TYPE_FIELD_MAPS.put("GLFY01", GLFY01_MAP);
 
+        // XSFY01 销售费用明细表映射
+        XSFY01_MAP.put("RGCB", new String[]{});      // 人工成本
+        XSFY01_MAP.put("RGCB01", new String[]{});    // 职工薪酬
+        XSFY01_MAP.put("RGCB02", new String[]{});    // 职工福利费
+        XSFY01_MAP.put("RGCB03", new String[]{});    // 社会保险费
+        XSFY01_MAP.put("RGCB04", new String[]{});    // 住房公积金
+        XSFY01_MAP.put("RGCB05", new String[]{});    // 职工教育经费
+        XSFY01_MAP.put("RGCB06", new String[]{});    // 工会经费
+        XSFY01_MAP.put("RGCB07", new String[]{});    // 劳保费
+        XSFY01_MAP.put("RGCB08", new String[]{});    // 非货币性福利
+        XSFY01_MAP.put("RGCB09", new String[]{});    // 辞退福利
+        XSFY01_MAP.put("RGCB10", new String[]{});    // 企业年金
+        XSFY01_MAP.put("RGCB11", new String[]{});    // 其他
+        XSFY01_MAP.put("LWF", new String[]{});       // 劳务费
+        XSFY01_MAP.put("BGF", new String[]{});       // 办公费
+        XSFY01_MAP.put("CLF", new String[]{});       // 差旅费
+        XSFY01_MAP.put("TXF", new String[]{});       // 通讯费
+        XSFY01_MAP.put("CLSYF", new String[]{});     // 车辆使用费
+        XSFY01_MAP.put("ZJF", new String[]{});       // 折旧费
+        XSFY01_MAP.put("ZJF01", new String[]{});     // 固定资产
+        XSFY01_MAP.put("ZJF02", new String[]{});     // 投资性房地产
+        XSFY01_MAP.put("ZJF03", new String[]{});     // 使用权资产
+        XSFY01_MAP.put("WXBYF", new String[]{});     // 维修保养费
+        XSFY01_MAP.put("ZLF", new String[]{});       // 租赁费
+        XSFY01_MAP.put("WLXH", new String[]{});      // 物料消耗
+        XSFY01_MAP.put("DZYHPTX", new String[]{});   // 低值易耗品摊销
+        XSFY01_MAP.put("SF", new String[]{});        // 水费
+        XSFY01_MAP.put("DF", new String[]{});        // 电费
+        XSFY01_MAP.put("GGXCF", new String[]{});     // 广告宣传费
+        XSFY01_MAP.put("XSFYZLF", new String[]{});   // 销售费用-展览费
+        XSFY01_MAP.put("YWZDF", new String[]{});     // 业务招待费
+        XSFY01_MAP.put("YSF", new String[]{});       // 运输费
+        XSFY01_MAP.put("ZXF", new String[]{});       // 装卸费
+        XSFY01_MAP.put("XSFY-ZLF", new String[]{});  // 销售费用-整理费
+        XSFY01_MAP.put("BZF", new String[]{});       // 包装费
+        XSFY01_MAP.put("JYF", new String[]{});       // 检验费
+        XSFY01_MAP.put("SPHS", new String[]{});      // 商品损耗
+        XSFY01_MAP.put("BXF", new String[]{});       // 保险费
+        XSFY01_MAP.put("CCF", new String[]{});       // 仓储费
+        XSFY01_MAP.put("YJ", new String[]{});        // 佣金
+        XSFY01_MAP.put("SHFWF", new String[]{});     // 售后服务费
+        XSFY01_MAP.put("PJZJJGF", new String[]{});   // 聘请中介机构费
+        XSFY01_MAP.put("PJZJJGF01", new String[]{}); // 审计费
+        XSFY01_MAP.put("PJZJJGF02", new String[]{}); // 评估费
+        XSFY01_MAP.put("PJZJJGF03", new String[]{}); // 司法费
+        XSFY01_MAP.put("PJZJJGF04", new String[]{}); // 咨询费
+        XSFY01_MAP.put("PJZJJGF05", new String[]{}); // 融资服务
+        XSFY01_MAP.put("PJZJJGF06", new String[]{}); // 信用评级
+        XSFY01_MAP.put("PJZJJGF07", new String[]{}); // 产权服务
+        XSFY01_MAP.put("PJZJJGF08", new String[]{}); // 其他
+        XSFY01_MAP.put("YWFWF", new String[]{});     // 物业服务费
+        XSFY01_MAP.put("CQDTFY", new String[]{});    // 长期待摊费用
+        XSFY01_MAP.put("QT", new String[]{});        // 其他
+
+        REPORT_TYPE_FIELD_MAPS.put("XSFY01", XSFY01_MAP);
+
         // 添加其他报表类型的映射
 
 
@@ -581,7 +639,7 @@ public class FinancialDataSaver {
             }
 
             // 特殊处理 CWFY01 和 GLFY01 报表（结构相同，共用处理方法）
-            if ("CWFY01".equals(reportNumber) || "GLFY01".equals(reportNumber)) {
+            if ("CWFY01".equals(reportNumber) || "GLFY01".equals(reportNumber) ||"XSFY01".equals(reportNumber)) {
                 return processExpenseDetailData(dataItem, entityMap);
             }
 
@@ -881,6 +939,7 @@ public class FinancialDataSaver {
                 return 24;
             case "CWFY01":
             case "GLFY01":
+            case "XSFY01":
                 return 5;
             default:
                 return 3;
