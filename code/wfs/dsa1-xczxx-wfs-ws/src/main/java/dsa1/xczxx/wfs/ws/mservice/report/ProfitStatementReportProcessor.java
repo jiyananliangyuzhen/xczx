@@ -393,7 +393,7 @@ public class ProfitStatementReportProcessor {
      * 从API响应数据创建报表数据
      */
     public static String createReportDataFromApi(JSONObject apiResponse,String reportCode,
-                                                 List<String> accounts) {
+                                                 Map<String, String> accountMap) {
         try {
             if (!apiResponse.getBoolean("status")) {
                 return "API返回状态异常：" + apiResponse.getString("message");
@@ -414,7 +414,7 @@ public class ProfitStatementReportProcessor {
             // 第一行是表头
             JSONArray headerArray = dataArray.getJSONArray(0);
 
-            Set<String> accountSet = new HashSet<>(accounts);
+            Set<String> accountSet = accountMap.keySet();  // 科目编码集合
 
             // 使用Map按维度分组聚合数据
             Map<String, DynamicObject> recordMap = new LinkedHashMap<>();
