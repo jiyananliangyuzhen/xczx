@@ -1,4 +1,4 @@
-package dsa1.xczxx.wfs.ws.mservice.report;
+package dsa1.xczxx.wfs.ws.business.report;
 
 
 import com.alibaba.fastjson.JSON;
@@ -18,10 +18,8 @@ import net.sf.json.JSONObject;
 
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static dsa1.xczxx.wfs.ws.common.util.DataSendHttp.doPost_token;
-import static dsa1.xczxx.wfs.ws.mservice.report.ProfitStatementReportProcessor.createReportDataFromApi;
 
 public class MergeReportService extends AbstractTask {
     private final static Log logger = LogFactory.getLog(MergeReportService.class);
@@ -122,7 +120,7 @@ public class MergeReportService extends AbstractTask {
 
                 // 处理响应数据，传入当前报表代码和科目列表
                 JSONObject responseJson = JSONObject.fromObject(response);
-                String result = createReportDataFromApi(responseJson, reportCode, accountMap);
+                String result = ProfitStatementReportProcessor.createReportDataFromApi(responseJson, reportCode, accountMap);
                 logger.info("报表 {} 处理结果: {}", reportCode, result);
             }
 

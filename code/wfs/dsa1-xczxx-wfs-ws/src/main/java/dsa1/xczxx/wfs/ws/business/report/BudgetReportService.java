@@ -1,8 +1,7 @@
-package dsa1.xczxx.wfs.ws.mservice.report;
+package dsa1.xczxx.wfs.ws.business.report;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
-import com.grapecity.documents.excel.E;
 import dsa1.xczxx.wfs.ws.common.util.GetTokneService;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -22,7 +21,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static dsa1.xczxx.wfs.ws.common.util.DataSendHttp.doPost_token;
-import static dsa1.xczxx.wfs.ws.mservice.report.FinancialDataSaver.saveFinancialData;
+import static dsa1.xczxx.wfs.ws.business.report.FinancialDataSaver.saveFinancialData;
 
 public class BudgetReportService extends AbstractTask {
 
@@ -248,7 +247,7 @@ public class BudgetReportService extends AbstractTask {
         // 基础参数
         params.put(PARAM_MODEL_NUM, getStringParam(taskParams, PARAM_MODEL_NUM, MODEL_NUMBER));
         params.put(PARAM_SCENE, getStringParam(taskParams, PARAM_SCENE, SCENE));
-        params.put(PARAM_CURRENCY, getStringParam(taskParams, PARAM_CURRENCY, "DC"));
+        params.put(PARAM_CURRENCY, getStringParam(taskParams, PARAM_CURRENCY, "EC"));
 
         // 维度参数
         Map<String, Object> dimMemberMap = new HashMap<>();

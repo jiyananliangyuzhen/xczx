@@ -1,4 +1,4 @@
-package dsa1.xczxx.wfs.ws.mservice.report;
+package dsa1.xczxx.wfs.ws.business.report;
 
 import java.util.List;
 import java.util.Map;

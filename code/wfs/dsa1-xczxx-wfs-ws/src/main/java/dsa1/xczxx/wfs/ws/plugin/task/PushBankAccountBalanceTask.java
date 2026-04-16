@@ -22,6 +22,7 @@ public class PushBankAccountBalanceTask extends AbstractTask {
         logger.info("PushBankAccountBalanceTask start");
         logger.info("requestContext = {}",requestContext);
         logger.info("map = {}",map);
+        logger.info("11111111111111111111111111111111111");
         String key = (String) map.get("key");
         Date date = null;
         if ("automatic".equals(key)){

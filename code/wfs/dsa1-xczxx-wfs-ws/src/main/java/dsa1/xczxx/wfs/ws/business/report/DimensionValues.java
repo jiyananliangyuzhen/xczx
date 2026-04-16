@@ -1,4 +1,4 @@
-package dsa1.xczxx.wfs.ws.mservice.report;
+package dsa1.xczxx.wfs.ws.business.report;
 
 /**
  * 维度值封装类

@@ -1,4 +1,4 @@
-package dsa1.xczxx.wfs.ws.mservice.report;
+package dsa1.xczxx.wfs.ws.business.report;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

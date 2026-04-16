@@ -23,6 +23,8 @@ public class PushBankAccountTradingTask extends AbstractTask {
         logger.info("PushBankAccountTradingTask start");
         logger.info("requestContext = {}",requestContext);
         logger.info("map = {}",map);
+        logger.info("11111111111111111111111111111111111");
+
         Date date= DataQueryTool.geDate(map);
         //有key代表是 每日正常执行  没有key 则是手工执行推送历史数据
         String key = (String) map.get("key");
