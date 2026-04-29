@@ -75,22 +75,39 @@ public class DeletebankaccountBalance extends AbstractOperationServicePlugIn {
     private String deleteBalance(DynamicObject data) {
         StringBuilder sqlBuilder = new StringBuilder();
         String tablename;
+        String mainTablename;
         if ("produce".equals(flag)) {
             tablename = "largefund_bank_account_balance_detail";
+            mainTablename = "largefund_bank_account_balance";
         } else {
             tablename = "largefund_bank_account_balance_detail_test";
+            mainTablename = "largefund_bank_account_balance_test";
         }
         Date bizdate = (Date) data.get("bizdate");
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("yyyy-MM-dd");
+        String currentTime = simpleDateFormat.format(new Date());
+        String formattedBizdate = bizdate == null ? "" : simpleDateFormat1.format(bizdate);
+        Long xhId = data.getLong("id");
+
         sqlBuilder.append("UPDATE ").append(tablename)
                 .append(" SET data_state = '1', submit_time = '")
                 .append(simpleDateFormat.format(new Date()))
                 .append("' WHERE xh_id = ")
-                .append(data.getLong("id"))
+                .append(xhId)
                 .append(" AND balance_date = '")
-                .append(bizdate == null ? "" : simpleDateFormat1.format(bizdate))
+                .append(formattedBizdate)
                 .append("'");
+
+
+        sqlBuilder.append(" UPDATE ").append(mainTablename)
+                .append(" SET data_state = '1', submit_time = '")
+                .append(currentTime)
+                .append("' WHERE master_tab_id = (")
+                .append(" SELECT master_tab_id FROM ").append(tablename)
+                .append(" WHERE xh_id = ").append(xhId)
+                .append(" AND balance_date = '").append(formattedBizdate)
+                .append("' );");
 
         return sqlBuilder.toString();
 

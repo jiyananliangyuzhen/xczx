@@ -14,6 +14,9 @@ import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+
+
+
 public class DeletebankaccountTrading extends AbstractOperationServicePlugIn {
     private static final String flag = "produce";
 

@@ -940,7 +940,7 @@ public class FinancialDataSaver {
             case "CWFY01":
             case "GLFY01":
             case "XSFY01":
-                return 5;
+                return 9;  // 改为9，因为现在有9个字段
             default:
                 return 3;
         }
@@ -1345,7 +1345,12 @@ public class FinancialDataSaver {
         financialData.set("dsa1_bqs", parseBigDecimal(getValueFromRow(row, 1)));    // 本期数
         financialData.set("dsa1_bnljs", parseBigDecimal(getValueFromRow(row, 2)));  // 本年累计数
         financialData.set("dsa1_snljs", parseBigDecimal(getValueFromRow(row, 3)));  // 上年累计数
-        // 索引4: 同比增减率（暂不存储，预留字段）
+        // 索引4: 同比增减率（暂不存储，预留字段）  2026.04.29 新增字段
+        financialData.set("dsa1_tbzj", parseBigDecimal(getValueFromRow(row, 4)));         // 同比增长率
+        financialData.set("dsa1_monthlybudget", parseBigDecimal(getValueFromRow(row, 5))); // 本月预算
+        financialData.set("dsa1_annualbudget", parseBigDecimal(getValueFromRow(row, 6)));  // 本年预算
+        financialData.set("dsa1_byyswcl", parseBigDecimal(getValueFromRow(row, 7)));       // 本月预算完成率
+        financialData.set("dsa1_bnyswcl", parseBigDecimal(getValueFromRow(row, 8)));       // 本年预算完成率
 
         financialData.set("dsa1_modifytime", nowDate);
 
