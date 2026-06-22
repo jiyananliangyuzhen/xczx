@@ -224,8 +224,6 @@ public class OATaskDataSend {
 
         return responseBody;
     }
-
-
     public static String doGet(String url) {
         HttpURLConnection connection = null;
         try {
@@ -234,26 +232,31 @@ public class OATaskDataSend {
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(5000);
             connection.setReadTimeout(5000);
-
-            // 设置请求头
             connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
             int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                String inputLine;
-                StringBuffer response = new StringBuffer();
 
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
-                in.close();
-                return response.toString();
+            // 修改这里：无论成功还是失败，都读取响应内容
+            BufferedReader in;
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             } else {
-                return null;
+                // 读取错误流
+                in = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
             }
+
+            String inputLine;
+            StringBuffer response = new StringBuffer();
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+
+            log.info("responseCode = {}, response = {}", responseCode, response.toString());
+            return response.toString();
+
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("请求失败", e);
             return null;
         } finally {
             if (connection != null) {
@@ -261,5 +264,41 @@ public class OATaskDataSend {
             }
         }
     }
+
+//    public static String doGet(String url) {
+//        HttpURLConnection connection = null;
+//        try {
+//            URL requestUrl = new URL(url);
+//            connection = (HttpURLConnection) requestUrl.openConnection();
+//            connection.setRequestMethod("GET");
+//            connection.setConnectTimeout(5000);
+//            connection.setReadTimeout(5000);
+//
+//            // 设置请求头
+//            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+//
+//            int responseCode = connection.getResponseCode();
+//            if (responseCode == HttpURLConnection.HTTP_OK) {
+//                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+//                String inputLine;
+//                StringBuffer response = new StringBuffer();
+//
+//                while ((inputLine = in.readLine()) != null) {
+//                    response.append(inputLine);
+//                }
+//                in.close();
+//                return response.toString();
+//            } else {
+//                return null;
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return null;
+//        } finally {
+//            if (connection != null) {
+//                connection.disconnect();
+//            }
+//        }
+//    }
 
 }

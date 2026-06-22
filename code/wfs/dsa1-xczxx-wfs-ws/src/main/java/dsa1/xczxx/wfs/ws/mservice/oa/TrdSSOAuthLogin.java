@@ -2,11 +2,9 @@ package dsa1.xczxx.wfs.ws.mservice.oa;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import dsa1.xczxx.wfs.ws.mservice.oa.entity.OaUserResponse;
 import dsa1.xczxx.wfs.ws.util.OATaskDataSend;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.utils.StringUtils;
-import kd.bos.exception.ErrorCode;
 import kd.bos.exception.KDBizException;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -22,8 +20,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 泛微OA OAuth2单点登录插件
@@ -41,7 +37,7 @@ public class TrdSSOAuthLogin implements ThirdSSOAuthHandler {
     public void callTrdSSOLogin(HttpServletRequest request,
                                 HttpServletResponse response,
                                 String s) {
-        logger.info("========== callTrdSSOLogin 开始 ==========");
+        logger.info("========== callTrdSSOLogin 开始 ==========11111");
 
         try {
             String ticket = request.getParameter("ticket");
@@ -60,8 +56,9 @@ public class TrdSSOAuthLogin implements ThirdSSOAuthHandler {
                     String ssoUrl = getOaConfig(KEY_OA_SSO_URL);
                     String clientId = getOaConfig(KEY_CLIENT_ID);
                     String redirectUri   = getBaseURL(request);
+                    logger.info("redirectUri: {}", redirectUri);
                     String url =   host+redirectUri;
-                    logger.info("url: {}", ticket);
+                    logger.info("host+redirectUri: {}", url);
                     String authUrl = buildAuthorizeUrl(ssoUrl, clientId, url);
                     logger.info("OA待办首次访问，重定向到OA登录页: {}", authUrl);
                     response.sendRedirect(authUrl);
@@ -94,7 +91,7 @@ public class TrdSSOAuthLogin implements ThirdSSOAuthHandler {
     @Override
     public UserAuthResult getTrdSSOAuth(HttpServletRequest request,
                                         HttpServletResponse response) {
-        logger.info("========== getTrdSSOAuth 开始 ==========");
+        logger.info("========== getTrdSSOAuth 开始 ==========111");
 
         UserAuthResult result = new UserAuthResult();
         result.setSucess(false);
@@ -322,15 +319,15 @@ public class TrdSSOAuthLogin implements ThirdSSOAuthHandler {
             String result = url.replaceAll("&ticket=[^&]*", "");
             logger.info("result = {}", result);
             // 构建GET请求的URL参数
-
             String requestUrl = ssoUrl + "/sso/oauth2.0/accessToken" + "?client_id=" + URLEncoder.encode(clientId, "UTF-8") +
                     "&client_secret=" + URLEncoder.encode(clientSecret, "UTF-8") +
                     "&grant_type=" + URLEncoder.encode("authorization_code", "UTF-8") +
                     "&code=" + URLEncoder.encode(ticket, "UTF-8") +
                     "&redirect_uri=" + URLEncoder.encode(result, "UTF-8");
-
+            logger.info("完整请求URL = {}", requestUrl);
             // 调用GET请求方法
             String response = OATaskDataSend.doGet(requestUrl);
+            logger.info("response = {}", response);
 
             return JSON.parseObject(response);
         } catch (Exception e) {
@@ -368,13 +365,28 @@ public class TrdSSOAuthLogin implements ThirdSSOAuthHandler {
         String requestURI = request.getRequestURI();
         String queryString = request.getQueryString();
 
+
+        // 去掉URI中的 /ierp，保留 /integration/...
+        if (requestURI != null && requestURI.startsWith("/ierp")) {
+            requestURI = requestURI.substring(5);  // 去掉 "/ierp"，得到 "/integration/..."
+        }
+
+        // 根据系统属性 ext 判断是否去掉 /ext
+        String ext = System.getProperty("ext");
+        if (ext != null && "exclude".equals(ext)) {
+            if (requestURI != null && requestURI.startsWith("/ext")) {
+                requestURI = requestURI.substring(4);  // 去掉 "/ext"
+            }
+        }
+
+
         // 拼接完整地址
         String redirectUri =   requestURI;
         if (queryString != null && !queryString.isEmpty()) {
             redirectUri += "?" + queryString;
         }
 
-
+        logger.info("getBaseURL  redirectUri: {}", redirectUri);
         return redirectUri;
     }
 }

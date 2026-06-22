@@ -38,7 +38,9 @@ public class DeletebankaccountBalance extends AbstractOperationServicePlugIn {
             connection.setAutoCommit(false);
              statement = connection.createStatement();
             for (DynamicObject dataEntitie : dataEntities) {
-                statement.addBatch(deleteBalance(dataEntitie))   ;
+//                statement.addBatch(deleteBalance(dataEntitie))   ;
+                statement.addBatch(deleteBalanceDetail(dataEntitie));
+                statement.addBatch(deleteBalanceMain(dataEntitie));
             }
             int[] i =  statement.executeBatch();
             logger.info("i = {}",i);
@@ -112,6 +114,78 @@ public class DeletebankaccountBalance extends AbstractOperationServicePlugIn {
         return sqlBuilder.toString();
 
     }
+
+    /**
+     * 更新明细表 largefund_bank_account_balance_detail
+     */
+    private String deleteBalanceDetail(DynamicObject data) {
+        StringBuilder sqlBuilder = new StringBuilder();
+        String tablename;
+        if ("produce".equals(flag)) {
+            tablename = "largefund_bank_account_balance_detail";
+        } else {
+            tablename = "largefund_bank_account_balance_detail_test";
+        }
+
+        Date bizdate = (Date) data.get("bizdate");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("yyyy-MM-dd");
+        String currentTime = simpleDateFormat.format(new Date());
+        String formattedBizdate = bizdate == null ? "" : simpleDateFormat1.format(bizdate);
+        Long xhId = data.getLong("id");
+
+        sqlBuilder.append("UPDATE ").append(tablename)
+                .append(" SET data_state = '1', submit_time = '")
+                .append(currentTime)
+                .append("' WHERE xh_id = ")
+                .append(xhId)
+                .append(" AND balance_date = '")
+                .append(formattedBizdate)
+                .append("'");
+
+        String sql = sqlBuilder.toString();
+        logger.info("deleteBalanceDetail SQL: {}", sql);
+        return sql;
+    }
+
+    /**
+     * 更新主表 largefund_bank_account_balance
+     */
+    private String deleteBalanceMain(DynamicObject data) {
+        StringBuilder sqlBuilder = new StringBuilder();
+        String tablename;
+        String mainTablename;
+        if ("produce".equals(flag)) {
+            tablename = "largefund_bank_account_balance_detail";
+            mainTablename = "largefund_bank_account_balance";
+        } else {
+            tablename = "largefund_bank_account_balance_detail_test";
+            mainTablename = "largefund_bank_account_balance_test";
+        }
+
+        Date bizdate = (Date) data.get("bizdate");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("yyyy-MM-dd");
+        String currentTime = simpleDateFormat.format(new Date());
+        String formattedBizdate = bizdate == null ? "" : simpleDateFormat1.format(bizdate);
+        Long xhId = data.getLong("id");
+
+        // 注意：这里假设 xh_id + balance_date 在明细表中能唯一定位一条记录
+        sqlBuilder.append("UPDATE ").append(mainTablename)
+                .append(" SET data_state = '1', submit_time = '")
+                .append(currentTime)
+                .append("' WHERE master_tab_id IN (")
+                .append(" SELECT master_tab_id FROM ").append(tablename)
+                .append(" WHERE xh_id = ").append(xhId)
+                .append(" AND balance_date = '").append(formattedBizdate)
+                .append("')");
+
+        String sql = sqlBuilder.toString();
+        logger.info("deleteBalanceMain SQL: {}", sql);
+        return sql;
+    }
+
+
 
 
 

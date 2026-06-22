@@ -294,7 +294,6 @@ public class ProfitStatementReportProcessor {
         REPORT_ACCOUNT_FIELD_MAP.put("GLFY", glfyAccountMap);
 
 
-
         Map<String, String> xsfyAccountMap = new HashMap<>();
 
         xsfyAccountMap.put("XSFY01", "dsa1_xsfy01");
@@ -396,7 +395,7 @@ public class ProfitStatementReportProcessor {
     /**
      * 从API响应数据创建报表数据
      */
-    public static String createReportDataFromApi(JSONObject apiResponse,String reportCode,
+    public static String createReportDataFromApi(JSONObject apiResponse, String reportCode,
                                                  Map<String, String> accountMap) {
         try {
             if (!apiResponse.getBoolean("status")) {
@@ -404,7 +403,7 @@ public class ProfitStatementReportProcessor {
             }
 
             JSONArray dataArray = apiResponse.getJSONArray("data");
-            log.info("dataArray = {}",dataArray);
+            log.info("dataArray = {}", dataArray);
             if (dataArray == null || dataArray.size() < 2) {
                 return "无有效数据";
             }
@@ -414,9 +413,6 @@ public class ProfitStatementReportProcessor {
             if (tableName == null) {
                 return String.format("报表 %s 未配置对应的表名", reportCode);
             }
-
-//            // 第一行是表头
-//            JSONArray headerArray = dataArray.getJSONArray(0);
 
             Set<String> accountSet = accountMap.keySet();  // 科目编码集合
 
@@ -428,76 +424,11 @@ public class ProfitStatementReportProcessor {
                 return saveToOldStorage(apiResponse, reportCode, accountSet);
             }
 
-            // 使用Map按维度分组聚合数据
-//            Map<String, DynamicObject> recordMap = new LinkedHashMap<>();
-//
-//            // 从第二行开始处理数据
-//            for (int i = 1; i < dataArray.size(); i++) {
-//                JSONArray rowArray = dataArray.getJSONArray(i);
-//
-//                // 第一条数据是金额
-//                BigDecimal amount = new BigDecimal(rowArray.getString(0));
-//
-//                // 获取所有维度值
-//                DimensionValues dimensions = extractDimensionValues(headerArray, rowArray);
-//
-//                // 检查科目是否属于当前报表
-//                if (!accountSet.contains(dimensions.account)) {
-//                    continue;
-//                }
-//
-//                // 处理期间格式
-//                String period = formatPeriod(dimensions.budgetPeriod);
-//
-//                // 构建记录的唯一键
-//                String recordKey = buildRecordKey(dimensions, period);
-//
-//                // 获取或创建DynamicObject
-//                DynamicObject record = getOrCreateRecord(recordMap, recordKey, tableName,
-//                        reportCode, dimensions, period,
-//                        headerArray, rowArray);
-//
-//                // 设置金额
-//                setAmountField(record, reportCode, dimensions.account, amount);
-//            }
-//
-//            // 分离新增和更新的数据
-//            List<DynamicObject> newDataList = new ArrayList<>();
-//            List<DynamicObject> updateDataList = new ArrayList<>();
-//
-//            Timestamp now = new Timestamp(System.currentTimeMillis());
-//
-//            for (DynamicObject record : recordMap.values()) {
-//                Long id = record.getLong(FIELD_ID);
-//
-//                if (id == null || id == 0L) {
-//                    // 新增数据
-//                    record.set(FIELD_CREATE_TIME, now);
-//                    record.set(FIELD_MODIFY_TIME, now);
-//                    newDataList.add(record);
-//                } else {
-//                    // 更新数据
-//                    record.set(FIELD_ID, id);
-//                    record.set(FIELD_MODIFY_TIME, now);
-//                    updateDataList.add(record);
-//                }
-//            }
-//
-//            // 批量保存新增数据
-//            String newResult = saveNewData(newDataList, reportCode, tableName );
-//
-//            // 批量更新数据
-//            String updateResult = updateExistingData(updateDataList, reportCode);
-//
-//            return String.format("报表 %s 处理完成：%s；%s",
-//                    reportCode, newResult, updateResult);
-
         } catch (Exception e) {
             e.printStackTrace();
             return "创建报表数据失败：" + e.getMessage();
         }
     }
-
 
 
     /**
@@ -542,7 +473,6 @@ public class ProfitStatementReportProcessor {
                 getDimensionValue(headers, row, "Account")
         );
     }
-
 
 
     /**
@@ -598,13 +528,19 @@ public class ProfitStatementReportProcessor {
         record.set("dsa1_reportnumber", reportCode);
 
         // 设置基本维度字段
-        DynamicObject dynamicObject  =  getOrgMapping( dimensions.entity);
-        if (dynamicObject==null){
+        DynamicObject dynamicObject = getOrgMapping(dimensions.entity);
+        if (dynamicObject == null) {
             record.set("dsa1_orgnumber", dimensions.entity);
             record.set("dsa1_companyname", queryOrgName(dimensions.entity));
-        }else {
+        } else {
             record.set("dsa1_orgnumber", dynamicObject.getString("number"));
             record.set("dsa1_companyname", dynamicObject.getString("name"));
+
+            record.set("dsa1_orgnumber1", dynamicObject.getString("dsa1_orgnumber1"));
+            record.set("dsa1_companyname1", dynamicObject.getString("dsa1_companyname1"));
+            record.set("dsa1_orgnumber2", dynamicObject.getString("dsa1_orgnumber2"));
+            record.set("dsa1_companyname2", dynamicObject.getString("dsa1_companyname2"));
+            record.set("dsa1_orgabbr", dynamicObject.getString("dsa1_orgabbr"));
         }
         record.set("dsa1_during", period);
         record.set("dsa1_version_code", dimensions.version);
@@ -613,7 +549,7 @@ public class ProfitStatementReportProcessor {
         record.set("dsa1_metric", dimensions.metric);
         record.set("dsa1_audit_trail", dimensions.auditTrail);
         record.set("dsa1_currency", dimensions.currency);
-        if ("GZQY13".equals(reportCode)){
+        if ("GZQY13".equals(reportCode)) {
             record.set("dsa1_total", "TOTAL");
 
         }
@@ -625,25 +561,28 @@ public class ProfitStatementReportProcessor {
         // 解析期间
         parsePeriod(record, dimensions.budgetPeriod);
     }
+
     private static DynamicObject getOrgMapping(String number) {
         try {
-            DynamicObject orgMapping = BusinessDataServiceHelper.loadSingle("dsa1_reportorgmapping", "number,name", new QFilter[]{new QFilter("dsa1_hborgnumber", QCP.equals, number)});
-            return  orgMapping  ;
-        }catch (Exception e){
+            DynamicObject orgMapping = BusinessDataServiceHelper.loadSingle("dsa1_reportorgmapping", "number,name,dsa1_orgnumber1,dsa1_companyname1,dsa1_orgnumber2,dsa1_companyname2,dsa1_orgabbr", new QFilter[]{new QFilter("dsa1_hborgnumber", QCP.equals, number)});
+            return orgMapping;
+        } catch (Exception e) {
             log.error("getOrgMapping: {}", e.getMessage(), e);
             return null;
         }
     }
+
     /**
      * 根据报表代码获取表名
      */
     private static String getTableNameByReportCode(String reportCode) {
         return REPORT_TABLE_MAP.get(reportCode);
     }
+
     /**
      * 保存新增数据
      */
-    private static String saveNewData(List<DynamicObject> newDataList, String reportCode,String table_name) {
+    private static String saveNewData(List<DynamicObject> newDataList, String reportCode, String table_name) {
         if (newDataList == null || newDataList.isEmpty()) {
             return String.format("报表 %s 无新增数据", reportCode);
         }
@@ -709,6 +648,7 @@ public class ProfitStatementReportProcessor {
             return "";
         }
     }
+
     /**
      * 查询已存在的记录
      */
@@ -734,12 +674,13 @@ public class ProfitStatementReportProcessor {
             DynamicObject results = BusinessDataServiceHelper.loadSingle(tableName, "*", filters);
 
             return results;
-        }catch (Exception e){
+        } catch (Exception e) {
             log.debug("查找已存在数据失败: {}", e.getMessage());
             return null;
         }
 
     }
+
     private static DynamicObject queryOrg(String orgNumber) {
         QFilter[] filters = {
                 new QFilter("dimension.number", QCP.equals, "Entity"),
@@ -752,6 +693,7 @@ public class ProfitStatementReportProcessor {
                 String.join(",", "name", "number", "memberid"),
                 filters);
     }
+
     /**
      * 构建记录的唯一键
      */
@@ -800,7 +742,7 @@ public class ProfitStatementReportProcessor {
             if (!excludeFields.contains(dimensionName)) {
                 String dbFieldName = DIMENSION_FIELD_MAP.get(dimensionName);
                 if (dbFieldName != null) {
-                    String value = row.getString(i+1);
+                    String value = row.getString(i + 1);
                     // 存储所有值，包括PJNone、ITNone等
                     record.set(dbFieldName, value);
                 }
@@ -834,12 +776,11 @@ public class ProfitStatementReportProcessor {
     private static String getDimensionValue(JSONArray headers, JSONArray row, String dimensionName) {
         for (int i = 0; i < headers.size(); i++) {
             if (dimensionName.equals(headers.getString(i))) {
-                return row.getString(i+1);
+                return row.getString(i + 1);
             }
         }
         return null;
     }
-
 
 
     /**
@@ -939,6 +880,8 @@ public class ProfitStatementReportProcessor {
         } else {
             record.set("dsa1_orgnumber", orgMapping.getString("number"));
             record.set("dsa1_companyname", orgMapping.getString("name"));
+
+
         }
 
         record.set("dsa1_during", period);
@@ -950,7 +893,7 @@ public class ProfitStatementReportProcessor {
         record.set("dsa1_currency", dimensions.currency);
         record.set("dsa1_account", accountCode);
         record.set("dsa1_accountname", accountName);
-            // 新增：设置其他维度字段（CPJD、CostItem 等）
+        // 新增：设置其他维度字段（CPJD、CostItem 等）
         setOtherDimensionFields(record, headers, row);
         parsePeriod(record, dimensions.budgetPeriod);
     }

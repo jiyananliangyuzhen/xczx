@@ -1,511 +1,3 @@
-//package dsa1.xczxx.wfs.ws.mservice.oa;
-//
-//import dsa1.xczxx.wfs.ws.mservice.oa.entity.Xczx_Log;
-//import dsa1.xczxx.wfs.ws.mservice.oa.entity.NotifyTodoAppResult;
-//import dsa1.xczxx.wfs.ws.mservice.oa.entity.NotifyTodoRemoveContext;
-//import dsa1.xczxx.wfs.ws.mservice.oa.entity.NotifyTodoSendContext;
-//import dsa1.xczxx.wfs.ws.util.OATaskDataSend;
-//import kd.bos.workflow.engine.msg.AbstractMessageServiceHandler;
-//import kd.bos.workflow.engine.msg.ctx.MessageContext;
-//import kd.bos.workflow.engine.msg.info.ToDoInfo;
-//
-//import com.alibaba.fastjson.JSON;
-//import kd.bos.dataentity.entity.DynamicObject;
-//import kd.bos.dataentity.entity.DynamicObjectCollection;
-//import kd.bos.dataentity.utils.StringUtils;
-//import kd.bos.exception.ErrorCode;
-//import kd.bos.exception.KDBizException;
-//import kd.bos.logging.Log;
-//import kd.bos.logging.LogFactory;
-//import kd.bos.orm.query.QCP;
-//import kd.bos.orm.query.QFilter;
-//import kd.bos.servicehelper.QueryServiceHelper;
-//
-//
-//import java.sql.Timestamp;
-//import java.text.SimpleDateFormat;
-//import java.util.*;
-//import java.util.stream.Collectors;
-//
-//public class ApprovalTaskSyncOa extends AbstractMessageServiceHandler {
-//    private static final Log log = LogFactory.getLog(ApprovalTaskSyncOa.class);
-//    private final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-//    @Override
-//    public void createToDo(MessageContext messageContext, ToDoInfo toDoInfo) {
-//        log.info("messageContext = {}",messageContext);
-//        log.info("toDoInfo = {}",toDoInfo);
-//        log.info("createToDo begin ");
-//        Xczx_Log xczxLog = new Xczx_Log();
-//        xczxLog.setCreateTime(new Timestamp(System.currentTimeMillis()));
-//        xczxLog.setCode("createToDo");
-//        xczxLog.setName("OA待办推送");
-//        xczxLog.setBillno(toDoInfo.getBillNo());
-//        try {
-//            log.info("messageContext = {}",messageContext);
-//            log.info("toDoInfo = {}",toDoInfo);
-//            String createToDoPath = System.getProperty("createtodo");
-//            log.info("createToDoPath = {}",createToDoPath);
-//            if (StringUtils.isEmpty(createToDoPath)) {
-//                log.error("ApprovalTaskSyncOA createToDo createTodo的Path为空,请检查MC配置");
-//                throw new KDBizException("createTodo的Path为空,请检查MC配置");
-//            }
-//            xczxLog.setRequestUrl(createToDoPath);
-//            List<Long> userIds = toDoInfo.getUserIds();
-//            if (userIds.isEmpty()) {
-//                log.error("ApprovalTaskSyncOAPlugin createToDo 任务接收人为空！");
-//                throw new KDBizException("任务接收人为空！");
-//            }
-//            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-//            String taskId = messageContext.getTaskId().toString();
-//            log.info("taskId = {}",taskId);
-//            Map<String, Object> nodeName = getNodeName(taskId);
-//            log.info("nodeName = {}",nodeName);
-//            NotifyTodoSendContext context = new NotifyTodoSendContext();
-//            context.setSyscode("xczx");
-//            context.setFlowid(taskId);
-//            String subject = StringUtils.isEmpty(nodeName.get("subject").toString())?toDoInfo.getContent() : nodeName.get("subject").toString();
-//            context.setRequestname(subject);
-//            context.setWorkflowname(subject);
-//
-//            String originalUrl = toDoInfo.getUrl();
-//            String relativePath = convertToRelativePath(originalUrl);
-//            log.info("originalUrl = {}, relativePath = {}", originalUrl, relativePath);
-//            context.setPcurl(relativePath);
-//            context.setAppurl(relativePath);
-//            context.setIsremark("0");
-//            context.setViewtype("0");
-//            List<String> username = getUsername(userIds);
-//            log.info("username = {}",username);
-//            List<String> loginName =  getOaLoginName(userIds);
-//            context.setReceiver(String.join(",", loginName));
-//            context.setCreatedatetime(simpleDateFormat.format(nodeName.get("createDate")));
-//            context.setReceivedatetime(simpleDateFormat.format(new Date()));
-//            log.info("starter",String.valueOf(nodeName.get("starter")));
-//            String docCreator = getOaLoginName(Long.valueOf(nodeName.get("starter").toString()));
-//            context.setCreator(docCreator);
-//            log.info(" createToDo context = {}",JSON.toJSONString(context));
-//            xczxLog.setInParam(JSON.toJSONString(context));
-//            try {
-//                xczxLog.setRequestTime(new Timestamp(System.currentTimeMillis()));
-//                String result = OATaskDataSend.doPost2(JSON.toJSONString(context), createToDoPath);
-//                log.info("createToDo result = {}",result);
-//                xczxLog.setOutParam(result);
-//                NotifyTodoAppResult res = JSON.parseObject(result, NotifyTodoAppResult.class);
-//                log.info("res  = {}",res);
-//                if ("0".equals(res.getOperResult())){
-//                    throw  new KDBizException(res.getMessage());
-//                }
-//            }catch (Exception e){
-//                xczxLog.setStatus("0");
-//                log.error("ApprovalTaskSyncOA createToDo OA待办数据推送异常" + e.getMessage(), e);
-//                throw new KDBizException(e, new ErrorCode("OACreateToDoDataError", "OA待办数据推送异常:" + e.getMessage()));
-//            }
-//        }catch (Exception e){
-//            log.info("进入存储待办");
-//            if (xczxLog.getStatus()==null){
-//                xczxLog.setStatus("1");
-//            }
-//            xczxLog.setResponseMsg(e.getMessage());
-//            SyncLogUtil.gxjt_log_save(xczxLog);
-////            throw new KDBizException(e, new ErrorCode("OACreateToDoDataError",   e.getMessage()));
-//        }
-//
-//
-//
-//
-//    }
-//
-//    @Override
-//    public void dealToDo(MessageContext messageContext, ToDoInfo toDoInfo) {
-//        log.info("dealToDo begin ");
-//        Xczx_Log xczxLog = new Xczx_Log();
-//        xczxLog.setCreateTime(new Timestamp(System.currentTimeMillis()));
-//        xczxLog.setCode("dealToDo");
-//        xczxLog.setName("OA已办推送");
-//        xczxLog.setBillno(toDoInfo.getBillNo());
-//        try {
-//            log.info("messageContext = {}",messageContext);
-//            log.info("toDoInfo = {}",toDoInfo);
-//            String dealToDoPath = System.getProperty("createtodo");
-//            if (StringUtils.isEmpty(dealToDoPath)) {
-//                log.error("ApprovalTaskSyncOAPlugin dealToDo dealToDoPath的Path为空,请检查MC配置");
-//                throw new KDBizException("dealToDoPath的Path为空,请检查MC配置");
-//            }
-//
-//            List<Long> userIds = toDoInfo.getUserIds();
-//            if (userIds.isEmpty()) {
-//                log.error("ApprovalTaskSyncOAPlugin createToDo 任务接收人为空！");
-//                throw new KDBizException("任务接收人为空！");
-//            }
-//            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-//
-//            String taskId = messageContext.getTaskId().toString();
-//            Map<String, Object> nodeName = getNodeName(taskId);
-//            NotifyTodoSendContext context = new NotifyTodoSendContext();
-//            context.setSyscode("xczx");
-//            context.setFlowid(taskId);
-//            String subject = StringUtils.isEmpty(nodeName.get("subject").toString())?toDoInfo.getContent() : nodeName.get("subject").toString();
-//            context.setRequestname(subject);
-//            context.setWorkflowname(subject);
-//            context.setPcurl(toDoInfo.getUrl());
-//            context.setAppurl(toDoInfo.getUrl());
-//            context.setIsremark("2");
-//            context.setViewtype("1");
-//
-//            List<String> username = getUsername(userIds);
-//            log.info("username = {}",username);
-//            List<String> loginName =  getOaLoginName(userIds);
-//            log.info("loginName",loginName);
-//            context.setReceiver(String.join(",", loginName));
-//            context.setCreatedatetime(simpleDateFormat.format(nodeName.get("createDate")));
-//            context.setReceivedatetime(simpleDateFormat.format(new Date()));
-//            log.info("starter",String.valueOf(nodeName.get("starter")));
-//            String docCreator = getOaLoginName(Long.valueOf(nodeName.get("starter").toString()));
-//            context.setCreator(docCreator);
-//            log.info("dealToDo context = {}",context);
-//            xczxLog.setInParam(JSON.toJSONString(context));
-//            try {
-//                xczxLog.setRequestTime(new Timestamp(System.currentTimeMillis()));
-//                String result = OATaskDataSend.doPost2(JSON.toJSONString(context), dealToDoPath);
-//                log.info("dealToDo result = {}",result);
-//                xczxLog.setOutParam(result);
-//                NotifyTodoAppResult res = JSON.parseObject(result, NotifyTodoAppResult.class);
-//                if ("0".equals(res.getOperResult())){
-//                    throw  new KDBizException(res.getMessage());
-//                }
-//            }catch (Exception e){
-//                xczxLog.setStatus("2");
-//                log.error("ApprovalTaskSyncOa dealToDo OA已办数据推送异常" + e.getMessage(), e);
-//                throw new KDBizException(e, new ErrorCode("OADealToDoDataError", "待办数据封装异常:" + e.getMessage()));
-//            }
-//        }catch (Exception e){
-//            if (xczxLog.getStatus()==null){
-//                xczxLog.setStatus("1");
-//            }
-//            xczxLog.setResponseMsg(e.getMessage());
-//            SyncLogUtil.gxjt_log_save(xczxLog);
-////            throw new KDBizException(e, new ErrorCode("OADealToDoDataError",   e.getMessage()));
-//
-//        }
-//
-//    }
-//
-////    @Override
-////    public void deleteToDo(MessageContext messageContext, ToDoInfo toDoInfo) {
-////        log.info("deleteToDo begin ");
-////        Xczx_Log xczxLog = new Xczx_Log();
-////        xczxLog.setCreateTime(new Timestamp(System.currentTimeMillis()));
-////        xczxLog.setCode("deleteToDo");
-////        xczxLog.setName("OA删除待办");
-////        xczxLog.setBillno(toDoInfo.getBillNo());
-////        try {
-////            String deleteToDoPath = System.getProperty("deleteto");
-////            if (StringUtils.isEmpty(deleteToDoPath)) {
-////                log.error("ApprovalTaskSyncOAPlugin deleteToDo deleteToDoPath的Path为空,请检查MC配置");
-////                throw new KDBizException("deleteToDoPath的Path为空,请检查MC配置");
-////            }
-////            List<Long> userIds = toDoInfo.getUserIds();
-////            if (userIds.isEmpty()) {
-////                log.error("ApprovalTaskSyncOAPlugin createToDo 任务接收人为空！");
-////                throw new KDBizException("任务接收人为空！");
-////            }
-////            List<String> username = getUsername(userIds);
-////            log.info("username = {}",username);
-////            List<String>   loginName =  getOaLoginName(userIds);
-////            log.info("loginName",loginName);
-////            String taskId = messageContext.getTaskId().toString();
-////
-////            for (String user:loginName){
-////                NotifyTodoRemoveContext context = new NotifyTodoRemoveContext();
-////                context.setSyscode("xczx");
-////                context.setFlowid(taskId);
-////                context.setReceiver(user);
-////
-////                log.info("deleteToDo context = {}",context);
-////                xczxLog.setInParam(JSON.toJSONString(context));
-////            }
-////
-////            try {
-////                xczxLog.setRequestTime(new Timestamp(System.currentTimeMillis()));
-////                String result = OATaskDataSend.doPost2(JSON.toJSONString(context), deleteToDoPath);
-////                log.info("deleteToDo result = {}",result);
-////                xczxLog.setOutParam(result);
-////                NotifyTodoAppResult res = JSON.parseObject(result, NotifyTodoAppResult.class);
-////                if ("0".equals(res.getOperResult())){
-////                    throw  new RuntimeException(res.getMessage());
-////                }
-////            }catch (Exception e){
-////                xczxLog.setStatus("2");
-////                log.error("ApprovalTaskSyncOa deleteToDo OA待办数据封装异常" + e.getMessage(), e);
-////                throw new KDBizException(e, new ErrorCode("OADealToDoDataError", "待办数据封装异常:" + e.getMessage()));
-////            }
-////        }catch (Exception e){
-////            if (xczxLog.getStatus()==null){
-////                xczxLog.setStatus("1");
-////            }
-////            xczxLog.setResponseMsg(e.getMessage());
-////            SyncLogUtil.gxjt_log_save(xczxLog);
-////            throw new KDBizException(e, new ErrorCode("OADealToDoDataError", e.getMessage()));
-////
-////        }
-////
-////    }
-//
-//
-//    @Override
-//    public void deleteToDo(MessageContext messageContext, ToDoInfo toDoInfo) {
-//        log.info("deleteToDo begin");
-//
-//        // 创建日志对象
-//        Xczx_Log xczxLog = createLog(toDoInfo.getBillNo());
-//
-//        try {
-//            // 1. 验证配置路径
-//             String deleteToDoPath = System.getProperty("deleteto");
-//            if (StringUtils.isEmpty(deleteToDoPath)) {
-//                log.error("ApprovalTaskSyncOAPlugin deleteToDo deleteToDoPath的Path为空,请检查MC配置");
-//                throw new KDBizException("deleteToDoPath的Path为空,请检查MC配置");
-//            }
-//
-//            // 2. 获取用户信息
-//            List<Long> userIds = toDoInfo.getUserIds();
-//            if (userIds == null || userIds.isEmpty()) {
-//                log.error("ApprovalTaskSyncOAPlugin deleteToDo 任务接收人为空！");
-//                throw new KDBizException("任务接收人为空！");
-//            }
-//
-//            List<String> loginNames = getOaLoginName(userIds);
-//            log.info("loginNames = {}", loginNames);
-//
-//            String taskId = messageContext.getTaskId().toString();
-//
-//            // 3. 逐个处理用户删除待办
-//            processDeleteToDoForUsers(loginNames, taskId, deleteToDoPath, xczxLog);
-//
-//            // 4. 保存成功日志
-//            xczxLog.setStatus("0");
-//            SyncLogUtil.gxjt_log_save(xczxLog);
-//
-//        } catch (Exception e) {
-//            handleException(xczxLog, e);
-//        }
-//
-//        log.info("deleteToDo end");
-//    }
-//
-//    /**
-//     * 创建日志对象
-//     */
-//    private Xczx_Log createLog(String billNo) {
-//        Xczx_Log xczxLog = new Xczx_Log();
-//        xczxLog.setCreateTime(new Timestamp(System.currentTimeMillis()));
-//        xczxLog.setCode("deleteToDo");
-//        xczxLog.setName("OA删除待办");
-//        xczxLog.setBillno(billNo);
-//        return xczxLog;
-//    }
-//
-//
-//
-//    /**
-//     * 逐个处理用户删除待办
-//     */
-//    private void processDeleteToDoForUsers(List<String> loginNames, String taskId,
-//                                           String deleteToDoPath, Xczx_Log xczxLog) {
-//        List<String> successUsers = new ArrayList<>();
-//        List<String> failedUsers = new ArrayList<>();
-//
-//        for (String loginName : loginNames) {
-//            try {
-//                // 创建删除待办上下文
-//                NotifyTodoRemoveContext context = createNotifyContext(taskId, loginName);
-//                log.info("deleteToDo context for user {} = {}", loginName, context);
-//
-//                // 调用OA接口
-//                String result = callOADeleteToDo(context, deleteToDoPath, xczxLog);
-//
-//                // 验证结果
-//                if (validateResult(result)) {
-//                    successUsers.add(loginName);
-//                } else {
-//                    failedUsers.add(loginName);
-//                }
-//
-//            } catch (Exception e) {
-//                log.error("处理用户{}删除待办失败", loginName, e);
-//                failedUsers.add(loginName);
-//            }
-//        }
-//
-//        // 记录处理结果
-//        log.info("deleteToDo处理完成：成功{}个，失败{}个", successUsers.size(), failedUsers.size());
-//        if (!failedUsers.isEmpty()) {
-//            log.warn("失败的登录名：{}", failedUsers);
-//        }
-//    }
-//
-//    /**
-//     * 创建删除待办上下文
-//     */
-//    private NotifyTodoRemoveContext createNotifyContext(String taskId, String loginName) {
-//        NotifyTodoRemoveContext context = new NotifyTodoRemoveContext();
-//        context.setSyscode("xczx");
-//        context.setFlowid(taskId);
-//        context.setReceiver(loginName);  // 现在只传单个用户
-//        return context;
-//    }
-//
-//    /**
-//     * 调用OA删除待办接口
-//     */
-//    private String callOADeleteToDo(NotifyTodoRemoveContext context, String deleteToDoPath,
-//                                    Xczx_Log xczxLog) {
-//        try {
-//            String requestJson = JSON.toJSONString(context);
-//            xczxLog.setInParam(requestJson);
-//            xczxLog.setRequestTime(new Timestamp(System.currentTimeMillis()));
-//
-//            String result = OATaskDataSend.doPost2(requestJson, deleteToDoPath);
-//            log.info("deleteToDo result = {}", result);
-//            xczxLog.setOutParam(result);
-//
-//            return result;
-//        } catch (Exception e) {
-//            xczxLog.setStatus("2");
-//            log.error("ApprovalTaskSyncOa deleteToDo OA待办数据封装异常", e);
-//            throw new KDBizException(e, new ErrorCode("OADealToDoDataError",
-//                    "待办数据封装异常:" + e.getMessage()));
-//        }
-//    }
-//
-//    /**
-//     * 验证调用结果
-//     */
-//    private boolean validateResult(String result) {
-//        try {
-//            NotifyTodoAppResult res = JSON.parseObject(result, NotifyTodoAppResult.class);
-//            if ("0".equals(res.getOperResult())) {
-//                throw new RuntimeException(res.getMessage());
-//            }
-//            return true;
-//        } catch (Exception e) {
-//            log.error("验证删除待办结果失败", e);
-//            return false;
-//        }
-//    }
-//
-//    /**
-//     * 处理异常
-//     */
-//    private void handleException(Xczx_Log xczxLog, Exception e) {
-//        if (xczxLog.getStatus() == null) {
-//            xczxLog.setStatus("1");
-//        }
-//        xczxLog.setResponseMsg(e.getMessage());
-//        SyncLogUtil.gxjt_log_save(xczxLog);
-//
-//        log.error("deleteToDo处理失败", e);
-////        throw new KDBizException(e, new ErrorCode("OADealToDoDataError", e.getMessage()));
-//    }
-//
-//    private Map<String, Object> getNodeName(String idStr) {
-//        Map<String, Object> map = new HashMap<>();
-//        Long id = Long.valueOf(idStr);
-//        DynamicObject task = QueryServiceHelper.queryOne("wf_task", "starterid,name,createdate,processtype,subject,billno", new QFilter[]{new QFilter("id", QCP.equals, id)});
-//        if (task == null) {
-//            throw new KDBizException("任务:[" + id + "]不存在!");
-//        }
-//        String nodeName = task.getString("name");
-//        Long starter = task.getLong("starterid");
-//        Date createDate = task.getDate("createdate");
-//        String type = task.getString("processtype");
-//        String subject = task.getString("subject");
-//        map.put("nodeName", nodeName);
-//        map.put("starter",starter);
-//        map.put("createDate", createDate);
-//        map.put("processType", "AuditFlow".equals(type) ? "审批流" : "业务流");
-//        map.put("subject", subject);
-//        map.put("billno", task.getString("billno"));
-//        return map;
-//    }
-//    private List<String> getUsername(List<Long> ids) {
-//        DynamicObjectCollection userCol = QueryServiceHelper.query("bos_user", "username", new QFilter[]{new QFilter("id", QCP.in, ids)});
-//        if (userCol.isEmpty()) {
-//            throw new KDBizException("用户:[" + ids + "]不存在!");
-//        }
-//        return userCol.stream().map(user -> user.getString("username")).collect(Collectors.toList());
-//    }
-//
-//    private   List<String>   getOaLoginName(List<Long> id) {
-//        log.info("getOaLoginName begin");
-//        DynamicObjectCollection   dynamicObjects = QueryServiceHelper.query("bos_user", "dsa1_oamapping",
-//                new QFilter[]{new QFilter("id", QCP.in, id)});
-//        log.info("dynamicObject = {}",dynamicObjects);
-//        List<String> list;
-//        if (dynamicObjects == null) {
-//            throw new KDBizException("用户:[" + id + "]的OA映射不存在,请维护!");
-//        }else{
-//          list = dynamicObjects.stream()
-//                    .map(obj -> obj.getString("dsa1_oamapping"))
-//                    .filter(phone -> phone != null && !phone.isEmpty())
-//                    .collect(Collectors.toList());
-//        }
-//        return list;
-//    }
-//
-//
-//    private String getOaLoginName(Long id) {
-//        log.info("getOaLoginName begin");
-//        DynamicObject   dynamicObject = QueryServiceHelper.queryOne("bos_user", "dsa1_oamapping",
-//                new QFilter[]{new QFilter("id", QCP.equals, id)});
-//
-//        DynamicObject   dynamicObject1 = QueryServiceHelper.queryOne("bos_user", "name", new QFilter[]{new QFilter("id", QCP.equals, id)});
-//        log.info("dynamicObject1 = {}",dynamicObject1);
-//        log.info("dynamicObject = {}",dynamicObject);
-//        if (dynamicObject == null) {
-//            throw new KDBizException("用户:[" + id + "]的LoginName不存在,请维护!");
-//        }
-//        return dynamicObject.getString("dsa1_oamapping");
-//    }
-//
-//
-//    // 添加路径转换方法
-//    private String convertToRelativePath(String url) {
-//        if (StringUtils.isEmpty(url)) {
-//            return url;
-//        }
-//        try {
-//            java.net.URL urlObj = new java.net.URL(url);
-//            // 返回路径部分（包括查询参数）
-//            String path = urlObj.getPath();
-//            String query = urlObj.getQuery();
-//            if (StringUtils.isEmpty(query)) {
-//                return path;
-//            } else {
-//                return path + "?" + query;
-//            }
-//        } catch (Exception e) {
-//            log.error("URL转换异常，使用简单截取方式: {}", e.getMessage());
-//            // 简单截取方式：找到第一个://之后的下一个/开始截取
-//            int protocolIndex = url.indexOf("://");
-//            if (protocolIndex != -1) {
-//                int pathStartIndex = url.indexOf("/", protocolIndex + 3);
-//                if (pathStartIndex != -1) {
-//                    return url.substring(pathStartIndex);
-//                }
-//            }
-//            // 如果都不是，返回原值并记录警告
-//            log.warn("无法转换URL为相对路径: {}", url);
-//            return url;
-//        }
-//    }
-//
-//}
-//
-
-
-
-
 package dsa1.xczxx.wfs.ws.mservice.oa;
 
 import dsa1.xczxx.wfs.ws.mservice.oa.entity.Xczx_Log;
@@ -543,7 +35,6 @@ public class ApprovalTaskSyncOa extends AbstractMessageServiceHandler {
         log.info("createToDo begin");
         log.info("messageContext = {}", messageContext);
         log.info("toDoInfo = {}", toDoInfo);
-        log.info("111111111111111111111");
 
         // 创建日志对象
         Xczx_Log xczxLog = createLog(toDoInfo.getBillNo(), "createToDo", "OA待办推送");
@@ -551,6 +42,8 @@ public class ApprovalTaskSyncOa extends AbstractMessageServiceHandler {
         try {
             // 1. 验证配置路径
             String createToDoPath = System.getProperty("createtodo");
+
+
             if (StringUtils.isEmpty(createToDoPath)) {
                 log.error("ApprovalTaskSyncOA createToDo createTodo的Path为空,请检查MC配置");
                 throw new KDBizException("createTodo的Path为空,请检查MC配置");
@@ -607,8 +100,8 @@ public class ApprovalTaskSyncOa extends AbstractMessageServiceHandler {
         Xczx_Log xczxLog = createLog(toDoInfo.getBillNo(), "dealToDo", "OA已办推送");
 
         try {
-            // 1. 验证配置路径
-            String dealToDoPath = System.getProperty("dealtodo");
+            // 1. 验证配置路径  待办和已办接口地址一致
+            String dealToDoPath = System.getProperty("createtodo");
             if (StringUtils.isEmpty(dealToDoPath)) {
                 log.error("ApprovalTaskSyncOAPlugin dealToDo dealToDoPath的Path为空,请检查MC配置");
                 throw new KDBizException("dealToDoPath的Path为空,请检查MC配置");
@@ -779,32 +272,142 @@ public class ApprovalTaskSyncOa extends AbstractMessageServiceHandler {
     /**
      * 转换URL为相对路径
      */
+
+
+
     private String convertToRelativePath(String url) {
         if (StringUtils.isEmpty(url)) {
             return url;
         }
+
+        String system = System.getProperty("system");
+        log.info("convertToRelativePath - system = [{}], url = {}", system, url);
+
         try {
             java.net.URL urlObj = new java.net.URL(url);
             String path = urlObj.getPath();
             String query = urlObj.getQuery();
+
+            log.info("convertToRelativePath - 解析后 path = [{}], query = [{}]", path, query);
+
+            if (system != null && system.equals("prod")) {
+                // 生产环境：去掉 /ierp 和 /ext
+                if (path != null) {
+                    String originalPath = path;
+                    path = removePathPrefixes(path);
+                    log.info("convertToRelativePath - 路径转换: [{}] -> [{}]", originalPath, path);
+                }
+            } else {
+                log.info("convertToRelativePath - 非生产环境，不处理前缀，system = {}", system);
+            }
+
             if (StringUtils.isEmpty(query)) {
                 return path;
             } else {
                 return path + "?" + query;
             }
         } catch (Exception e) {
-            log.error("URL转换异常，使用简单截取方式: {}", e.getMessage());
-            int protocolIndex = url.indexOf("://");
-            if (protocolIndex != -1) {
-                int pathStartIndex = url.indexOf("/", protocolIndex + 3);
-                if (pathStartIndex != -1) {
-                    return url.substring(pathStartIndex);
+            log.error("convertToRelativePath - URL转换异常，使用备用方案: {}", e.getMessage(), e);
+
+            // 备用方案：手动截取路径部分
+            try {
+                String processedUrl = url;
+
+                // 找到协议后的第一个斜杠
+                int protocolIndex = url.indexOf("://");
+                if (protocolIndex != -1) {
+                    int pathStartIndex = url.indexOf("/", protocolIndex + 3);
+                    if (pathStartIndex != -1) {
+                        String originalPath = url.substring(pathStartIndex);
+                        // 分离路径和查询参数
+                        String pathPart = originalPath;
+                        String queryPart = null;
+                        int queryIndex = originalPath.indexOf('?');
+                        if (queryIndex != -1) {
+                            pathPart = originalPath.substring(0, queryIndex);
+                            queryPart = originalPath.substring(queryIndex + 1);
+                        }
+
+                        // 处理路径前缀
+                        String processedPath = removePathPrefixes(pathPart);
+
+                        if (queryPart != null) {
+                            return processedPath + "?" + queryPart;
+                        } else {
+                            return processedPath;
+                        }
+                    }
                 }
+
+                // 最后的备用方案：直接处理整个URL
+                String result = removePathPrefixes(url);
+                log.warn("convertToRelativePath - 最终备用方案结果: {} -> {}", url, result);
+                return result;
+
+            } catch (Exception ex) {
+                log.error("convertToRelativePath - 备用方案也失败了: {}", ex.getMessage(), ex);
+                return url;
             }
-            log.warn("无法转换URL为相对路径: {}", url);
-            return url;
         }
     }
+
+    /**
+     * 去掉路径中的 /ierp 和 /ext
+     * @param path 原始路径
+     * @return 处理后的路径
+     */
+    private String removePathPrefixes(String path) {
+        if (StringUtils.isEmpty(path)) {
+            return path;
+        }
+
+        String result = path;
+
+        // 1. 处理开头的 /ierp/
+        while (result.startsWith("/ierp/")) {
+            result = result.substring(5);
+            log.debug("removePathPrefixes - 去掉 /ierp/ 后: {}", result);
+        }
+
+        // 2. 处理开头单独的 /ierp
+        if (result.equals("/ierp")) {
+            result = "";
+            log.debug("removePathPrefixes - 去掉 /ierp 后: {}", result);
+        }
+
+        // 3. 处理开头的 /ext/
+        while (result.startsWith("/ext/")) {
+            result = result.substring(4);
+            log.debug("removePathPrefixes - 去掉 /ext/ 后: {}", result);
+        }
+
+        // 4. 处理开头单独的 /ext
+        if (result.equals("/ext")) {
+            result = "";
+            log.debug("removePathPrefixes - 去掉 /ext 后: {}", result);
+        }
+
+        // 5. 处理路径中间包含 /ierp/ 或 /ext/ 的情况（兼容性保留）
+        if (result.contains("/ierp/")) {
+            result = result.replace("/ierp/", "/");
+            log.debug("removePathPrefixes - 替换中间的 /ierp/ 后: {}", result);
+        }
+        if (result.contains("/ext/")) {
+            result = result.replace("/ext/", "/");
+            log.debug("removePathPrefixes - 替换中间的 /ext/ 后: {}", result);
+        }
+
+        // 6. 如果结果变成空字符串，返回根路径
+        if (StringUtils.isEmpty(result)) {
+            result = "/";
+        }
+
+        return result;
+    }
+
+
+
+
 
     /**
      * 逐个用户推送待办
