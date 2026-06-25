@@ -1605,7 +1605,7 @@ public class FinancialDataSaver {
                 }
 
                 // 保存费用明细记录
-                boolean result = saveExpenseDetailRecord(orgId, orgName, orgNumber, during, yearNum, month,
+                boolean result = saveExpenseDetailRecord(entityMap, entity, during, yearNum, month,
                         pageDims, accountCode, accountName, row, nowDate, tempNum, tableName);
 
                 if (result) {
@@ -1633,7 +1633,7 @@ public class FinancialDataSaver {
      *                  索引4: 同比增减率（暂不存储）
      * @param tableName 目标表名
      */
-    private static boolean saveExpenseDetailRecord(Long orgId, String orgName, String orgNumber,
+    private static boolean saveExpenseDetailRecord(  Map<String, DynamicObject> entityMap,String entity,
                                                    String during, String yearNum, String month,
                                                    Map<String, String> pageDims, String accountCode,
                                                    String accountName, List<Object> row,
@@ -1642,9 +1642,34 @@ public class FinancialDataSaver {
         DynamicObject financialData = BusinessDataServiceHelper.newDynamicObject(tableName);
 
         // 设置基础维度
-        financialData.set("dsa1_orgs", orgId);
-        financialData.set("dsa1_companyname", orgName);
-        financialData.set("dsa1_orgnumber", orgNumber);
+//        financialData.set("dsa1_orgs", orgId);
+//        financialData.set("dsa1_companyname", orgName);
+//        financialData.set("dsa1_orgnumber", orgNumber);
+
+
+        DynamicObject org = entityMap.get(entity);
+       Long orgId =  org.getLong("id");
+        if (org != null) {
+            DynamicObject dynamicObject = getOrgMapping(org.getString("number"));
+            if (dynamicObject == null) {
+                financialData.set(FIELD_COMPANY_NAME, org.getString("name"));
+                financialData.set(FIELD_ORGS, org.getLong("id"));
+                financialData.set(FIELD_ORGS_NUMBER, org.getString("number"));
+            } else {
+                financialData.set(FIELD_COMPANY_NAME, dynamicObject.getString("name"));
+                financialData.set(FIELD_ORGS, org.getLong("id"));
+                financialData.set(FIELD_ORGS_NUMBER, dynamicObject.getString("number"));
+                financialData.set("dsa1_orgnumber1", dynamicObject.getString("dsa1_orgnumber1"));
+                financialData.set("dsa1_companyname1", dynamicObject.getString("dsa1_companyname1"));
+                financialData.set("dsa1_orgnumber2", dynamicObject.getString("dsa1_orgnumber2"));
+                financialData.set("dsa1_companyname2", dynamicObject.getString("dsa1_companyname2"));
+                financialData.set("dsa1_orgabbr", dynamicObject.getString("dsa1_orgabbr"));
+            }
+
+        } else {
+            log.warn("未找到组织信息: {}", entity);
+        }
+
 
 
         financialData.set("dsa1_during", during);
